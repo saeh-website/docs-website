@@ -45,12 +45,6 @@ A Next.js documentation platform with dual database architecture and role-based 
    npm run dev
    ```
 
-## Default Accounts
-
-After seeding:
-- **Superadmin**: `superadmin` / `admin123` (all domains)
-- **Site Admin**: `siteadmin1` / `siteadmin123` (option1 only)
-- **Editor**: `editor1` / `editor123` (option1 only)
 
 ## User Roles
 
