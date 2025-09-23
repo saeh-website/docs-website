@@ -1,0 +1,47 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  password  String
+  profilePicture String? @default("/images/default-avatar.png")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userDomains UserDomain[]
+}
+
+model Domain {
+  id   String @id @default(cuid())
+  name String @unique
+  createdAt DateTime @default(now())
+
+  userDomains UserDomain[]
+  docs Doc[]
+}
+
+model UserDomain {
+  id       String @id @default(cuid())
+  userId   String
+  domainId String
+  userRole UserRole
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  domain Domain @relation(fields: [domainId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, domainId])
+}
+
+enum UserRole {
+  editor
+  site_admin
+  doc_admin
+  superadmin
+}
