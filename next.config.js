@@ -34,6 +34,13 @@ const nextConfig = {
           },
         ],
       });
+
+      // Add alias for Prisma clients
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        '.prisma/client-mongo': require('path').resolve(__dirname, 'node_modules/.prisma/client-mongo'),
+        '.prisma/client-postgres': require('path').resolve(__dirname, 'node_modules/.prisma/client-postgres'),
+      };
   
       // Important: return the modified config
       return config;
