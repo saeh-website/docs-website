@@ -1,133 +1,112 @@
 "use client";
-import { useState, useEffect } from "react";
-import { signOut, useSession } from "next-auth/react";
+
+import Link from "next/link";
+import Image from "next/image";
+import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
-export default function Sidebar() {
-  const { data: session, update } = useSession();
+export default function Sidebar({ isOpen, toggle }) {
+  const { data: session, status } = useSession();
   const router = useRouter();
-  const [isOpen, setIsOpen] = useState(false);
 
-  // Listen for toggle events from Navbar
-  useEffect(() => {
-    const handleToggle = (event) => {
-      setIsOpen(event.detail.open);
-    };
+  if (status === "loading") {
+    return <div>Loading...</div>; // Or a spinner component
+  }
 
-    window.addEventListener("toggleSidebar", handleToggle);
-    return () => window.removeEventListener("toggleSidebar", handleToggle);
-  }, []);
-  const [selectedDomain, setSelectedDomain] = useState(
-    session?.user?.currentDomain
-  );
+  // Use session data instead of placeholder
+  const user = session?.user;
 
-  useEffect(() => {
-    setSelectedDomain(session?.user?.currentDomain);
-  }, [session]);
+  if (!user) {
+    // This could happen if the session is invalid or expired
+    // You might want to redirect to login here
+    return null;
+  }
 
-  const handleDomainChange = async (domainId) => {
-    const newDomain = session.user.userDomains.find(
-      (ud) => ud.domainId === domainId
-    );
-    setSelectedDomain(newDomain);
-
-    // Update session with new domain
-    await update({
-      ...session,
-      user: {
-        ...session.user,
-        currentDomain: newDomain,
-      },
-    });
-
-    // Refresh the page to show data according to new domain
-    router.refresh();
+  const handleSignOut = async () => {
+    await signOut({ redirect: false });
+    router.push("/"); // Redirect to login page after sign out
   };
 
-  if (!session) return null;
+  const navLinkClasses = "block text-white text-lg hover:underline py-2";
+  const userRole = user.currentDomain?.userRole; // Use the role from the current domain
 
   return (
     <>
-      {/* Overlay */}
+      <div
+        className={`fixed top-0 right-0 h-full z-40 transition-transform transform ${
+          isOpen ? "translate-x-0" : "translate-x-full"
+        } w-full md:w-[250px]`}
+        style={{ backgroundColor: "var(--sidebar-bg-color)" }}
+      >
+        <div className="p-8 text-center text-white">
+          <div className="flex justify-center mb-4">
+            <Image
+              src={user.profilePicture || "/images/default-avatar.png"}
+              alt="Profile Picture"
+              width={80}
+              height={80}
+              className="rounded-full"
+              onError={(e) => {
+                e.currentTarget.src = "/images/default-avatar.png";
+              }}
+            />
+          </div>
+          <h2 className="text-xl mb-2">مرحباً {user.username}</h2>
+          <div className="mb-4">
+            <p className="text-sm">
+              النطاق الحالي: {user.currentDomain?.domainName}
+            </p>
+            {/* Domain change functionality will be implemented later */}
+            <Link
+              href="#"
+              className="text-sm hover:underline"
+              style={{ color: "var(--link-color)" }}
+            >
+              (تغيير)
+            </Link>
+          </div>
+
+          <nav>
+            <Link href="/profile/edit" className={navLinkClasses}>
+              تعديل الملف الشخصي
+            </Link>
+            <button
+              onClick={handleSignOut}
+              className="w-full bg-[#e01f26] text-white font-bold py-2 px-4 rounded-lg hover:opacity-80 transition-opacity duration-300 my-4"
+            >
+              تسجيل الخروج
+            </button>
+
+            <hr className="border-t border-gray-500 my-4" />
+
+            <Link href="/docs" className={navLinkClasses}>
+              المستندات
+            </Link>
+
+            {["site_admin", "doc_admin", "superadmin"].includes(userRole) && (
+              <Link href="/users" className={navLinkClasses}>
+                المستخدمون
+              </Link>
+            )}
+
+            {["doc_admin", "superadmin"].includes(userRole) && (
+              <Link href="/domains" className={navLinkClasses}>
+                النطاقات
+              </Link>
+            )}
+          </nav>
+
+          <footer className="absolute bottom-8 right-0 left-0 text-center text-sm">
+            <p>ابو الهول دايماً… قوة و حكمة</p>
+          </footer>
+        </div>
+      </div>
       {isOpen && (
         <div
-          className="overlay"
-          onClick={() => setIsOpen(false)}
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: "rgba(0,0,0,0.5)",
-            zIndex: 999,
-          }}
-        />
+          className="fixed top-0 left-0 w-full h-full z-30 bg-black opacity-50"
+          onClick={toggle}
+        ></div>
       )}
-
-      {/* Sidebar */}
-      <div className={`sidebar ${isOpen ? "open" : ""}`}>
-        <div className="sidebar-profile">
-          <img
-            src={session.user.profilePicture}
-            alt="Profile"
-            onError={(e) => {
-              e.target.src = "/images/default-avatar.png";
-            }}
-          />
-          <p>Welcome {session.user.username}</p>
-        </div>
-
-        {/* Domain Selector */}
-        {session.user.userDomains.length > 1 && (
-          <div className="form-group">
-            <select
-              value={selectedDomain?.domainId || ""}
-              onChange={(e) => handleDomainChange(e.target.value)}
-              className="form-control"
-            >
-              {session.user.userDomains.map((ud) => (
-                <option key={ud.domainId} value={ud.domainId}>
-                  {ud.domainName}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-
-        <ul className="sidebar-links">
-          <li>
-            <a href="/docs">Docs</a>
-          </li>
-          {(session.user.currentDomain?.userRole === "site_admin" ||
-            session.user.currentDomain?.userRole === "doc_admin" ||
-            session.user.currentDomain?.userRole === "superadmin") && (
-            <li>
-              <a href="/users">Users</a>
-            </li>
-          )}
-          {(session.user.currentDomain?.userRole === "doc_admin" ||
-            session.user.currentDomain?.userRole === "superadmin") && (
-            <li>
-              <a href="/domains">Domains</a>
-            </li>
-          )}
-          <li>
-            <a href="/profile">Edit Profile</a>
-          </li>
-          <li>
-            <button
-              onClick={() => signOut()}
-              className="btn"
-              style={{ width: "100%" }}
-            >
-              Sign Out
-            </button>
-          </li>
-        </ul>
-
-        <div className="sidebar-footer">فوذة و حكمة ... فوقه...</div>
-      </div>
     </>
   );
 }

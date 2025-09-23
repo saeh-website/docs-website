@@ -1,16 +1,14 @@
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 import Navbar from '@/components/Navbar'
-import Sidebar from '@/components/Sidebar'
 
-export default async function DashboardLayout({ children }) {
-  const session = await getServerSession(authOptions)
+export default function DashboardLayout({ children }) {
+  // Session logic has been removed as it's now handled by the client components
+  // that use the SessionProvider. We will add it back when we connect the real data.
 
   return (
     <>
       <Navbar />
-      <Sidebar session={session} />
-      <main style={{ marginTop: '80px', padding: '2rem' }}>
+      {/* The Sidebar is now rendered from within the Navbar component */}
+      <main style={{ marginTop: '100px', padding: '2rem' }}>
         {children}
       </main>
     </>
