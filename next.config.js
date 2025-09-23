@@ -15,7 +15,7 @@ const nextConfig = {
     
     // Environment variables that should be available at build time
     env: {
-      CUSTOM_KEY: process.env.CUSTOM_KEY,
+      // Add environment variables here if needed
     },
     
     // Webpack configuration for handling file uploads and dependencies
@@ -39,7 +39,7 @@ const nextConfig = {
       return config;
     },
     
-    // API route configuration
+    // Headers configuration (API routes and security)
     async headers() {
       return [
         {
@@ -50,12 +50,6 @@ const nextConfig = {
             { key: 'Access-Control-Allow-Headers', value: 'Content-Type, Authorization' },
           ],
         },
-      ];
-    },
-    
-    // Security headers
-    async headers() {
-      return [
         {
           source: '/(.*)',
           headers: [
