@@ -71,7 +71,7 @@ export default function Sidebar({ isOpen, toggle }) {
           </div>
 
           <nav>
-            <Link href="/profile/edit" className={navLinkClasses} style={{font-size: 1rem}}>
+            <Link href="/profile/edit" className={navLinkClasses} style={{ fontSize: "1rem" }}>
               تعديل الملف الشخصي
             </Link>
             <button
