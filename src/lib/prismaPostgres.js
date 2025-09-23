@@ -1,4 +1,4 @@
-import { PrismaClientPostgres as PrismaClient } from './prisma-clients.js'
+import { PrismaClient } from '@prisma/client-postgres'
 
 const globalForPrisma = global
 

@@ -5,7 +5,9 @@
         "@/*": ["./src/*"],
         "@/components/*": ["./src/components/*"],
         "@/lib/*": ["./src/lib/*"],
-        "@/styles/*": ["./src/styles/*"]
+        "@/styles/*": ["./src/styles/*"],
+        "@prisma/client-mongo": ["./node_modules/@prisma/client-mongo"],
+        "@prisma/client-postgres": ["./node_modules/@prisma/client-postgres"]
       }
     },
     "include": ["src/**/*"],

@@ -1,4 +1,4 @@
-import { PrismaClientMongo as PrismaClient } from './prisma-clients.js'
+import { PrismaClient } from '@prisma/client-mongo'
 
 const globalForPrisma = global
 
