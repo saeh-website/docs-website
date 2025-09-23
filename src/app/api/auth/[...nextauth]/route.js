@@ -8,13 +8,12 @@ export const authOptions = {
     CredentialsProvider({
       name: 'credentials',
       credentials: {
-        username: { label: "Username", type: "text" },
-        password: { label: "Password", type: "password" },
-        domainId: { label: "Domain", type: "text" }
+        username: { label: 'Username', type: 'text' },
+        password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
-        if (!credentials.username || !credentials.password) {
-          return null
+        if (!credentials?.username || !credentials?.password) {
+          throw new Error('Please enter your username and password')
         }
 
         const user = await prismaPostgres.user.findUnique({
@@ -22,75 +21,74 @@ export const authOptions = {
           include: {
             userDomains: {
               include: {
-                domain: true
-              }
-            }
-          }
+                domain: true,
+              },
+            },
+          },
         })
 
-        if (!user) {
-          return null
+        if (!user || !user.password) {
+          throw new Error('Invalid credentials')
         }
 
-        const passwordMatch = await bcrypt.compare(credentials.password, user.password)
-
-        if (!passwordMatch) {
-          return null
-        }
-
-        const userDomains = user.userDomains.map(ud => ({
-          domainId: ud.domainId,
-          domainName: ud.domain.name,
-          userRole: ud.userRole
-        }))
-
-        // For doc_admin and superadmin, domain selection is not required
-        const hasAdminRole = userDomains.some(ud => 
-          ud.userRole === 'doc_admin' || ud.userRole === 'superadmin'
+        const isPasswordMatch = await bcrypt.compare(
+          credentials.password,
+          user.password
         )
 
-        let selectedDomain = null
-        if (hasAdminRole) {
-          selectedDomain = userDomains[0]
-        } else if (credentials.domainId) {
-          selectedDomain = userDomains.find(ud => ud.domainId === credentials.domainId)
+        if (!isPasswordMatch) {
+          throw new Error('Invalid credentials')
         }
-
-        if (!selectedDomain && !hasAdminRole) {
-          throw new Error('Domain selection required')
-        }
-
+        
+        // Return a custom user object for the session
         return {
           id: user.id,
           username: user.username,
           profilePicture: user.profilePicture,
-          userDomains,
-          currentDomain: selectedDomain,
-          isAdmin: hasAdminRole
+          userDomains: user.userDomains.map(ud => ({
+            domainId: ud.domain.id,
+            domainName: ud.domain.name,
+            userRole: ud.userRole,
+          })),
         }
-      }
-    })
+      },
+    }),
   ],
   session: {
     strategy: 'jwt',
-    maxAge: 30 * 24 * 60 * 60 // 30 days
+    maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.user = user
+        token.id = user.id
+        token.username = user.username
+        token.profilePicture = user.profilePicture
+        token.userDomains = user.userDomains
+        // Set the first domain as the default
+        token.currentDomain = user.userDomains?.[0] || null
       }
       return token
     },
     async session({ session, token }) {
-      session.user = token.user
+      if (token) {
+        session.user = {
+          id: token.id,
+          username: token.username,
+          profilePicture: token.profilePicture,
+          userDomains: token.userDomains,
+          currentDomain: token.currentDomain,
+        }
+      }
       return session
-    }
+    },
   },
   pages: {
-    signIn: '/login'
-  }
+    signIn: '/', // The login page is the root page
+  },
+  secret: process.env.NEXTAUTH_SECRET,
 }
 
 const handler = NextAuth(authOptions)
+
 export { handler as GET, handler as POST }

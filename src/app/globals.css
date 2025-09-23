@@ -1,20 +1,29 @@
-@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-html {
-  direction: rtl;
+:root {
+  --background-color: #f5f5f5;
+  --primary-text-color: #191919;
+  --button-color: #e01f26;
+  --link-color: #6884f4;
+  --navbar-bg-color: #191919;
+  --sidebar-bg-color: #333;
 }
 
 body {
-  font-family: 'Cairo', sans-serif;
-  background-color: #f5f5f5;
-  color: #191919;
-  line-height: 1.6;
+  background-color: var(--background-color);
+  color: var(--primary-text-color);
+  font-family: "Cairo", sans-serif;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  color: var(--primary-text-color);
 }
 
 .container {
@@ -155,7 +164,7 @@ body {
   border: 1px solid #ddd;
   border-radius: 0.5rem;
   font-size: 1rem;
-  font-family: 'Cairo', sans-serif;
+  font-family: "Cairo", sans-serif;
 }
 
 .form-control:focus {
@@ -179,12 +188,12 @@ body {
     width: 80%;
     margin: 2rem auto;
   }
-  
+
   .sidebar {
     width: 100%;
     right: -100%;
   }
-  
+
   .navbar-content {
     padding: 0 1rem;
   }
@@ -193,7 +202,7 @@ body {
 /* Quill Editor Styles */
 .ql-editor {
   min-height: 300px;
-  font-family: 'Cairo', sans-serif;
+  font-family: "Cairo", sans-serif;
   text-align: right;
 }
 
