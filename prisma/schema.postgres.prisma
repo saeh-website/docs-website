@@ -1,5 +1,6 @@
 generator client {
   provider = "prisma-client-js"
+  output   = "../node_modules/@prisma/client-postgres"
 }
 
 datasource db {
@@ -24,7 +25,6 @@ model Domain {
   createdAt DateTime @default(now())
 
   userDomains UserDomain[]
-  docs Doc[]
 }
 
 model UserDomain {

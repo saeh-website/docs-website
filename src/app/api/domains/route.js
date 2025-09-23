@@ -21,7 +21,6 @@ export async function GET(request) {
         _count: {
           select: {
             userDomains: true,
-            docs: true,
           },
         },
       },
@@ -92,14 +91,13 @@ export async function DELETE(request) {
         _count: {
           select: {
             userDomains: true,
-            docs: true,
           },
         },
       },
     });
 
-    if (domainWithRelations._count.userDomains > 0 || domainWithRelations._count.docs > 0) {
-      return new Response('Cannot delete domain with existing users or documents', { status: 400 });
+    if (domainWithRelations._count.userDomains > 0) {
+      return new Response('Cannot delete domain with existing users', { status: 400 });
     }
 
     await prismaPostgres.domain.delete({
