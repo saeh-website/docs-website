@@ -1,11 +1,10 @@
 'use client'
-
 import { useState } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { signIn } from 'next-auth/react'
 
-export default function LoginPage() {
+export default function Home() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [domain, setDomain] = useState('') // This will be used later
@@ -20,20 +19,19 @@ export default function LoginPage() {
 
     try {
       const result = await signIn('credentials', {
-        redirect: false,
         username,
         password,
+        redirect: false,
       })
 
-      if (result.error) {
-        setError('اسم المستخدم أو كلمة المرور غير صحيحة.')
-        setLoading(false)
+      if (result?.error) {
+        setError(result.error)
       } else {
-        // Redirect to dashboard on successful login
-        router.push('/(dashboard)/dashboard')
+        router.push('/dashboard')
       }
-    } catch (err) {
-      setError('حدث خطأ غير متوقع. الرجاء المحاولة مرة أخرى.')
+    } catch (error) {
+      setError('An error occurred during login')
+    } finally {
       setLoading(false)
     }
   }

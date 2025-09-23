@@ -1,13 +1,20 @@
+'use client'
+
 import Navbar from '@/components/Navbar'
+import Sidebar from '@/components/Sidebar'
+import { useState } from 'react'
 
 export default function DashboardLayout({ children }) {
-  // Session logic has been removed as it's now handled by the client components
-  // that use the SessionProvider. We will add it back when we connect the real data.
+  const [isSidebarOpen, setSidebarOpen] = useState(false)
+
+  const toggleSidebar = () => {
+    setSidebarOpen(!isSidebarOpen)
+  }
 
   return (
     <>
-      <Navbar />
-      {/* The Sidebar is now rendered from within the Navbar component */}
+      <Navbar toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />
+      <Sidebar isOpen={isSidebarOpen} toggle={toggleSidebar} />
       <main style={{ marginTop: '100px', padding: '2rem' }}>
         {children}
       </main>
