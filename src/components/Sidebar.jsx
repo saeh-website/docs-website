@@ -31,6 +31,9 @@ export default function Sidebar({ isOpen, toggle }) {
   const userRole = (user.role || user.currentDomain?.userRole || "").toLowerCase();
  // Use the role from the current domain
 
+
+ console.log("Sidebar → user:", user);
+console.log("Sidebar → resolved role:", userRole);
   return (
     <>
       <div
