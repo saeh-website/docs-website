@@ -1,6 +1,9 @@
 generator client {
   provider = "prisma-client-js"
-  binarytargets   = ["../node_modules/@prisma/client-postgres","rhel-openssl-3.0.x"]
+  output   = "../node_modules/@prisma/client-postgres"
+  binaryTargets = ["native", "rhel-openssl-3.0.x"] // Add the required runtime
+
+
 }
 
 datasource db {
