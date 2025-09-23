@@ -33,9 +33,12 @@ export default function Sidebar({ isOpen, toggle }) {
   return (
     <>
       <div
-        className={`fixed top-0 right-0 h-full z-40 transition-transform transform ${
-          isOpen ? "translate-x-0" : "translate-x-full"
-        } w-full md:w-[250px]`}
+        className={`
+          h-full overflow-y-auto transition-all duration-300 ease-in-out
+          fixed md:relative z-40 top-0 right-0
+          ${isOpen ? "w-[250px] translate-x-0" : "w-0 translate-x-full"}
+          md:translate-x-0
+        `}
         style={{ backgroundColor: "var(--sidebar-bg-color)" }}
       >
         <div className="p-8 text-center text-white">
@@ -103,7 +106,7 @@ export default function Sidebar({ isOpen, toggle }) {
       </div>
       {isOpen && (
         <div
-          className="fixed top-0 left-0 w-full h-full z-30 bg-black opacity-50"
+          className="fixed top-0 left-0 w-full h-full z-30 bg-black opacity-50 md:hidden"
           onClick={toggle}
         ></div>
       )}

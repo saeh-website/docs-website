@@ -49,6 +49,7 @@ export const authOptions = {
             domainId: ud.domain.id,
             domainName: ud.domain.name,
             userRole: ud.userRole,
+            isDefault: ud.isDefault,
           })),
         }
       },
@@ -59,14 +60,29 @@ export const authOptions = {
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
+      if (trigger === "update" && session) {
+        token.currentDomain = session.user.currentDomain
+        token.requiresDomainSelection = session.user.requiresDomainSelection
+      }
+
       if (user) {
         token.id = user.id
         token.username = user.username
         token.profilePicture = user.profilePicture
         token.userDomains = user.userDomains
-        // Set the first domain as the default
-        token.currentDomain = user.userDomains?.[0] || null
+
+        const defaultDomain = user.userDomains?.find(d => d.isDefault)
+        if (defaultDomain) {
+          token.currentDomain = defaultDomain
+          token.requiresDomainSelection = false
+        } else if (user.userDomains?.length === 1) {
+          token.currentDomain = user.userDomains[0]
+          token.requiresDomainSelection = false
+        } else {
+          token.currentDomain = null
+          token.requiresDomainSelection = user.userDomains?.length > 1
+        }
       }
       return token
     },
@@ -78,6 +94,7 @@ export const authOptions = {
           profilePicture: token.profilePicture,
           userDomains: token.userDomains,
           currentDomain: token.currentDomain,
+          requiresDomainSelection: token.requiresDomainSelection,
         }
       }
       return session

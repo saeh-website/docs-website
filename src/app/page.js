@@ -7,7 +7,6 @@ import { signIn } from 'next-auth/react'
 export default function Home() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
-  const [domain, setDomain] = useState('') // This will be used later
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const router = useRouter()
@@ -35,9 +34,6 @@ export default function Home() {
       setLoading(false)
     }
   }
-
-  // Mock domains for the dropdown - will be replaced with dynamic data
-  const needed_domains = ['Domain A', 'Domain B', 'Domain C']
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-[#f5f5f5]">
@@ -81,22 +77,6 @@ export default function Home() {
             />
           </div>
 
-          {/* This dropdown will be shown conditionally later based on user role */}
-          <div className="mb-6">
-            <label htmlFor="domain" className="block text-right mb-2 font-bold">اختر النطاق</label>
-            <select
-              id="domain"
-              value={domain}
-              onChange={(e) => setDomain(e.target.value)}
-              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6884f4] bg-white"
-            >
-              <option value="" disabled>-- اختر نطاق --</option>
-              {needed_domains.map(d => (
-                <option key={d} value={d}>{d}</option>
-              ))}
-            </select>
-          </div>
-          
           {error && <p className="text-red-500 text-center mb-4">{error}</p>}
 
           <button

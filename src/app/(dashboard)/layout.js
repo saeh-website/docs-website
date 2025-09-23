@@ -12,12 +12,14 @@ export default function DashboardLayout({ children }) {
   }
 
   return (
-    <>
-      <Navbar toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />
-      <Sidebar isOpen={isSidebarOpen} toggle={toggleSidebar} />
-      <main style={{ marginTop: '100px', padding: '2rem' }}>
-        {children}
-      </main>
-    </>
+    <div className="bg-gray-100">
+      <Navbar toggleSidebar={toggleSidebar} />
+      <div className="flex h-screen pt-20">
+        <Sidebar isOpen={isSidebarOpen} toggle={toggleSidebar} />
+        <main className={`flex-grow p-8 overflow-y-auto transition-all duration-300 ease-in-out ${isSidebarOpen ? 'md:mr-[250px]' : 'mr-0'}`}>
+          {children}
+        </main>
+      </div>
+    </div>
   )
 }

@@ -32,6 +32,7 @@ model UserDomain {
   userId   String
   domainId String
   userRole UserRole
+  isDefault Boolean @default(false)
 
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   domain Domain @relation(fields: [domainId], references: [id], onDelete: Cascade)

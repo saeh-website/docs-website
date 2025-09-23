@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server'
+import { getToken } from 'next-auth/jwt'
 
-export function middleware(request) {
-  const sessionToken = request.cookies.get('next-auth.session-token') || request.cookies.get('__Secure-next-auth.session-token')
-  const isAuthenticated = !!sessionToken
+export async function middleware(request) {
+  const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET })
+  const isAuthenticated = !!token
   const { pathname } = request.nextUrl
 
   const protectedRoutes = ['/dashboard', '/docs', '/users', '/domains', '/profile']
@@ -13,9 +14,21 @@ export function middleware(request) {
     return NextResponse.redirect(loginUrl)
   }
 
-  if (pathname === '/' && isAuthenticated) {
-    const dashboardUrl = new URL('/dashboard', request.url)
-    return NextResponse.redirect(dashboardUrl)
+  if (isAuthenticated) {
+    if (pathname === '/') {
+      const dashboardUrl = new URL('/dashboard', request.url)
+      return NextResponse.redirect(dashboardUrl)
+    }
+
+    if (token.requiresDomainSelection) {
+      if (pathname !== '/select-domain') {
+        const selectDomainUrl = new URL('/select-domain', request.url)
+        return NextResponse.redirect(selectDomainUrl)
+      }
+    } else if (pathname === '/select-domain') {
+      const dashboardUrl = new URL('/dashboard', request.url)
+      return NextResponse.redirect(dashboardUrl)
+    }
   }
 
   return NextResponse.next()
