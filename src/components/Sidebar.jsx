@@ -55,7 +55,7 @@ export default function Sidebar({ isOpen, toggle }) {
               }}
             />
           </div >
-          <h2 className="text-xl mb-2" style="color:white;">مرحباً {user.username}</h2>
+          <h2 className="text-xl mb-2" style={{ color: "white" }}>مرحباً {user.username}</h2>
           <div className="mb-4">
             <p className="text-sm">
               النطاق الحالي: {user.currentDomain?.domainName}
@@ -71,7 +71,7 @@ export default function Sidebar({ isOpen, toggle }) {
           </div>
 
           <nav>
-            <Link href="/profile/edit" className={navLinkClasses} style="font-size: 1rem">
+            <Link href="/profile/edit" className={navLinkClasses} style={{font-size: 1rem}}>
               تعديل الملف الشخصي
             </Link>
             <button
