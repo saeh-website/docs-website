@@ -6,6 +6,8 @@ import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
 export default function Sidebar({ isOpen, toggle }) {
+  console.log("Sidebar component is rendering"); // 👈 this must appear
+
   const { data: session, status } = useSession();
   const router = useRouter();
 
@@ -37,6 +39,9 @@ console.log("Sidebar → resolved role:", userRole);
 
   return (
     <>
+    <p style={{ color: "red" }}>
+  DEBUG ROLE: {user.role} | {user.currentDomain?.userRole}
+</p>
       <div
         className={`
           h-full overflow-y-auto transition-all duration-300 ease-in-out
