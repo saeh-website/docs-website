@@ -160,3 +160,83 @@ export async function POST(request) {
     return new Response('Error creating user', { status: 500 });
   }
 }
+
+export async function DELETE(request) {
+  const session = await getServerSession(authOptions);
+
+  if (!session) {
+    return new Response('Unauthorized', { status: 401 });
+  }
+
+  const allowedRoles = ['site_admin', 'doc_admin', 'superadmin'];
+  if (!allowedRoles.includes(session.user.currentDomain.userRole)) {
+    return new Response('Forbidden', { status: 403 });
+  }
+
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return new Response('User ID is required', { status: 400 });
+    }
+
+    // Check if user exists
+    const userToDelete = await prismaPostgres.user.findUnique({
+      where: { id },
+      include: {
+        userDomains: {
+          include: {
+            domain: true,
+          },
+        },
+      },
+    });
+
+    if (!userToDelete) {
+      return new Response('User not found', { status: 404 });
+    }
+
+    // Prevent deleting yourself
+    if (userToDelete.id === session.user.id) {
+      return new Response('Cannot delete your own account', { status: 400 });
+    }
+
+    // Role hierarchy check - can't delete users with higher or equal roles
+    const currentUserRole = session.user.currentDomain.userRole;
+    const roleHierarchy = ['editor', 'site_admin', 'doc_admin', 'superadmin'];
+    const currentUserIndex = roleHierarchy.indexOf(currentUserRole);
+
+    const targetUserMaxRoleIndex = Math.max(
+      ...userToDelete.userDomains.map(ud => roleHierarchy.indexOf(ud.userRole))
+    );
+
+    if (targetUserMaxRoleIndex >= currentUserIndex) {
+      return new Response('Cannot delete user with equal or higher role', { status: 403 });
+    }
+
+    // If site_admin, can only delete users in their domains
+    if (currentUserRole === 'site_admin') {
+      const userDomainIds = session.user.userDomains
+        .filter(ud => ud.userRole === 'site_admin')
+        .map(ud => ud.domainId);
+
+      const hasPermission = userToDelete.userDomains.some(ud =>
+        userDomainIds.includes(ud.domainId)
+      );
+
+      if (!hasPermission) {
+        return new Response('Cannot delete user outside your domains', { status: 403 });
+      }
+    }
+
+    await prismaPostgres.user.delete({
+      where: { id },
+    });
+
+    return new Response(null, { status: 204 });
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    return new Response('Error deleting user', { status: 500 });
+  }
+}

@@ -1,6 +1,7 @@
-const { PrismaClient } = require('@prisma/client');
+const { PrismaClient } = require('@prisma/client-postgres');
 const bcrypt = require('bcryptjs');
 
+// Create Prisma client for PostgreSQL
 const prismaPostgres = new PrismaClient();
 
 async function main() {
