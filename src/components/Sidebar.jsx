@@ -28,7 +28,8 @@ export default function Sidebar({ isOpen, toggle }) {
   };
 
   const navLinkClasses = "block text-white text-lg hover:underline py-2";
-  const userRole = user.currentDomain?.userRole; // Use the role from the current domain
+  const userRole = (user.role || user.currentDomain?.userRole || "").toLowerCase();
+ // Use the role from the current domain
 
   return (
     <>
@@ -53,8 +54,8 @@ export default function Sidebar({ isOpen, toggle }) {
                 e.currentTarget.src = "/images/default-avatar.png";
               }}
             />
-          </div>
-          <h2 className="text-xl mb-2">مرحباً {user.username}</h2>
+          </div >
+          <h2 className="text-xl mb-2" style="color:white;">مرحباً {user.username}</h2>
           <div className="mb-4">
             <p className="text-sm">
               النطاق الحالي: {user.currentDomain?.domainName}
@@ -70,7 +71,7 @@ export default function Sidebar({ isOpen, toggle }) {
           </div>
 
           <nav>
-            <Link href="/profile/edit" className={navLinkClasses}>
+            <Link href="/profile/edit" className={navLinkClasses} style="font-size: 1rem">
               تعديل الملف الشخصي
             </Link>
             <button
@@ -87,16 +88,17 @@ export default function Sidebar({ isOpen, toggle }) {
             </Link>
 
             {["site_admin", "doc_admin", "superadmin"].includes(userRole) && (
-              <Link href="/users" className={navLinkClasses}>
-                المستخدمون
-              </Link>
-            )}
+  <Link href="/users" className={navLinkClasses}>
+    المستخدمون
+  </Link>
+)}
 
-            {["doc_admin", "superadmin"].includes(userRole) && (
-              <Link href="/domains" className={navLinkClasses}>
-                النطاقات
-              </Link>
-            )}
+{["doc_admin", "superadmin"].includes(userRole) && (
+  <Link href="/domains" className={navLinkClasses}>
+    النطاقات
+  </Link>
+)}
+
           </nav>
 
           <footer className="absolute bottom-8 right-0 left-0 text-center text-sm">
