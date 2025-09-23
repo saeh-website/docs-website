@@ -84,7 +84,7 @@ export const authOptions = {
     },
   },
   pages: {
-    signIn: '/', // The login page is the root page
+    signIn: '/',
   },
   secret: process.env.NEXTAUTH_SECRET,
 }
