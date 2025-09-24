@@ -31,7 +31,7 @@ export default function DocsPage() {
       const res = await axios.get(`/api/docs?domainId=${domainId}`)
       setDocs(res.data || [])
     } catch (err) {
-      console.error(err)
+      console.error('Fetch docs error:', err)
     }
   }
 
@@ -44,21 +44,16 @@ export default function DocsPage() {
   }
 
   const handleSave = async () => {
-  console.log('Saving doc', { title, domainId, content });
-  if (!title || !domainId || !content) {
-    return alert('الرجاء تعبئة جميع الحقول');
+    if (!title || !domainId || !content) return alert('الرجاء تعبئة جميع الحقول')
+    try {
+      await axios.post('/api/docs/add', { title, domainId, content })
+      fetchDocs(domainId)
+      handleClose()
+    } catch (err) {
+      console.error('Save error:', err)
+      alert('حدث خطأ أثناء حفظ المستند')
+    }
   }
-  try {
-    await axios.post('/api/docs/add', { title, domainId, content });
-    fetchDocs(domainId);
-    handleClose();
-  } catch (err) {
-    console.error('Save error:', err);
-    alert('حدث خطأ أثناء حفظ المستند');
-  }
-}
-
-  
 
   const handleDomainChange = (e) => {
     const selectedId = e.target.value
@@ -73,7 +68,7 @@ export default function DocsPage() {
         <div className="absolute top-24 left-6 z-10">
           <button
             onClick={handleAddClick}
-            className="flex items-center bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            className="btn flex items-center"
           >
             <Add className="ml-2" /> إضافة مستند
           </button>
@@ -87,7 +82,7 @@ export default function DocsPage() {
         <select
           value={domainId}
           onChange={handleDomainChange}
-          className="border px-2 py-1 rounded"
+          className="form-control w-1/2"
         >
           <option value="">اختر مجال</option>
           {domains.map((d) => (
@@ -115,6 +110,7 @@ export default function DocsPage() {
           <div className="bg-white p-6 rounded w-11/12 max-w-3xl space-y-4 relative">
             <h2 className="text-xl font-bold mb-2">إضافة مستند جديد</h2>
 
+            {/* Editor */}
             <Editor
               value={content}
               onChange={setContent}
@@ -127,16 +123,17 @@ export default function DocsPage() {
               setDomainId={setDomainId}
             />
 
+            {/* Modal Buttons */}
             <div className="flex justify-end space-x-2 mt-4">
               <button
                 onClick={handleClose}
-                className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+                className="btn bg-gray-300 text-black hover:opacity-80"
               >
                 إلغاء
               </button>
               <button
                 onClick={handleSave}
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                className="btn bg-button-color hover:opacity-80 text-white"
               >
                 حفظ
               </button>
