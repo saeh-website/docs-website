@@ -35,10 +35,10 @@ export default function Sidebar({ isOpen, toggle }) {
 
   return (
     <>
-      {/* Debug UI (safe to remove in prod) */}
+      {/* Debug UI (safe to remove in prod)
       <p style={{ color: "red" }}>
         DEBUG ROLE: {user.role} | normalized: {userRole}
-      </p>
+      </p> */}
 
       <div
         className={`

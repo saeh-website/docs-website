@@ -5,7 +5,6 @@ import { useSession } from "next-auth/react";
 export default function Navbar({ toggleSidebar }) {
   const { data: session, status } = useSession();
 
-  // Do not render the navbar on the login page or while session is loading
   if (status === "loading" || !session) {
     return null;
   }
@@ -16,13 +15,15 @@ export default function Navbar({ toggleSidebar }) {
       style={{ backgroundColor: "var(--navbar-bg-color)" }}
     >
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-20">
-          <div className="flex items-center">
-            <h1 className="text-white text-2xl font-bold">
-              SAEH Documentation
-            </h1>
-          </div>
-          <div className="flex items-center">
+        <div className="relative flex items-center justify-center h-20">
+          {/* ✅ Centered & Responsive Title */}
+          <h1 className="text-white font-bold absolute left-1/2 transform -translate-x-1/2 
+                         text-xl sm:text-2xl truncate max-w-[70%] text-center">
+            SAEH Documentation
+          </h1>
+
+          {/* ✅ Hamburger Menu on the Right */}
+          <div className="absolute right-0 flex items-center">
             <button
               onClick={toggleSidebar}
               className="text-white hover:text-gray-300 focus:outline-none focus:text-gray-300"
