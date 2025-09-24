@@ -1,36 +1,35 @@
-import { NextResponse } from "next/server";
-import { prismaMongo } from "@/lib/prismaMongo";
+// src/app/api/docs/add/route.js
+import { NextResponse } from 'next/server'
+import { prismaMongo } from '@/lib/prismaMongo'
 
 export async function POST(req) {
   try {
-    const body = await req.json();
-    const { title, domainId, content, authorId } = body;
+    const body = await req.json()
+    const { title, content, domainId } = body
 
-    // ✅ Validate required fields
-    if (!title || !domainId || !content) {
+    if (!title || !content || !domainId) {
       return NextResponse.json(
-        { error: "Missing required fields" },
+        { error: 'Title, content, and domainId are required' },
         { status: 400 }
-      );
+      )
     }
 
-    // ✅ Save document into MongoDB via Prisma
-    const newDoc = await prismaMongo.docs.create({
+    // Insert new document into MongoDB
+    const newDoc = await prismaMongo.doc.create({
       data: {
         title,
-        domainId,
         content,
-        authorId: authorId || null,
+        domainId,
         createdAt: new Date(),
       },
-    });
+    })
 
-    return NextResponse.json({ success: true, doc: newDoc }, { status: 201 });
+    return NextResponse.json(newDoc, { status: 201 })
   } catch (error) {
-    console.error("❌ Error adding doc:", error);
+    console.error('Error adding document:', error)
     return NextResponse.json(
-      { error: "Failed to add doc" },
+      { error: 'Failed to add document' },
       { status: 500 }
-    );
+    )
   }
 }
