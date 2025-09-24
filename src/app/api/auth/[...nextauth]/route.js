@@ -45,10 +45,11 @@ export const authOptions = {
           id: user.id,
           username: user.username,
           profilePicture: user.profilePicture,
+          role: user.role,
           userDomains: user.userDomains.map(ud => ({
             domainId: ud.domain.id,
             domainName: ud.domain.name,
-            userRole: ud.userRole,
+            userRole: ud.userRole || user.role, // 👈 fallback to global role
             isDefault: ud.isDefault,
           })),
         }
@@ -71,6 +72,7 @@ export const authOptions = {
         token.id = user.id
         token.username = user.username
         token.profilePicture = user.profilePicture
+        token.role=user.role
         token.userDomains = user.userDomains
 
         const defaultDomain = user.userDomains?.find(d => d.isDefault)
@@ -82,12 +84,12 @@ export const authOptions = {
           token.currentDomain = null
         }
         
-        token.role = "superadmin"
+        // token.role = "superadmin"
 
         if (token.currentDomain && !token.currentDomain.userRole) {
           token.currentDomain.userRole = token.role
         }
-        
+
         token.requiresDomainSelection = user.userDomains?.length > 1
 
       }
@@ -99,6 +101,7 @@ export const authOptions = {
           id: token.id,
           username: token.username,
           profilePicture: token.profilePicture,
+          role: token.role,
           userDomains: token.userDomains,
           currentDomain: token.currentDomain,
           role: token.role,
