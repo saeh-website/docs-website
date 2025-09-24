@@ -2,10 +2,13 @@ import { PrismaClient } from "@prisma/client-mongo";
 
 let prismaMongo;
 
-if (process.env.NODE_ENV === "production") {
-  prismaMongo = new PrismaClient();
+if (!global.prismaMongo) {
+  // In production, Prisma will pick the correct binary if binaryTargets are set in schema
+  prismaMongo = new PrismaClient({
+    log: ["query", "error", "warn"], // optional: helpful for debugging in production
+  });
+  global.prismaMongo = prismaMongo;
 } else {
-  if (!global.prismaMongo) global.prismaMongo = new PrismaClient();
   prismaMongo = global.prismaMongo;
 }
 
