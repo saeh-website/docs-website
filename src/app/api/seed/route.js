@@ -1,10 +1,10 @@
 import { seed } from "../../../../scripts/seed";
 import { NextResponse } from "next/server";
 
-// Handle GET requests (browser)
+// Allow GET to trigger seed for debugging in Chrome
 export async function GET() {
   try {
-    console.log("🌱 Seed triggered via GET");
+    console.log("🔎 Seeding triggered via GET request...");
     await seed();
     return NextResponse.json({ message: "✅ Seeding completed (via GET)" });
   } catch (err) {
@@ -13,5 +13,14 @@ export async function GET() {
   }
 }
 
-// Handle POST requests (curl or API clients)
-export async function
+// Keep POST for programmatic/manual triggering (e.g. curl or API client)
+export async function POST() {
+  try {
+    console.log("🔎 Seeding triggered via POST request...");
+    await seed();
+    return NextResponse.json({ message: "✅ Seeding completed (via POST)" });
+  } catch (err) {
+    console.error("❌ Seeding error (POST):", err);
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
+}
