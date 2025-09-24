@@ -5,7 +5,7 @@ import bcrypt from "bcryptjs";
 const postgres = prismaPostgres;
 const mongo = prismaMongo;
 
-export async function seed() {
+async function main() {
   console.log("🌱 Starting database seed...");
 
   // --- Create default domains in Postgres ---
@@ -25,7 +25,7 @@ export async function seed() {
 
   // --- Superadmin ---
   const superadmin = await postgres.user.upsert({
-    where: { username: "superadmin1" },
+    where: { username: "superadmin" },
     update: {},
     create: {
       username: "superadmin",
@@ -43,7 +43,7 @@ export async function seed() {
 
   // --- Site Admin ---
   await postgres.user.upsert({
-    where: { username: "siteadmin2" },
+    where: { username: "siteadmin1" },
     update: {},
     create: {
       username: "siteadmin1",
@@ -61,7 +61,7 @@ export async function seed() {
 
   // --- Editor ---
   await postgres.user.upsert({
-    where: { username: "editor2" },
+    where: { username: "editor1" },
     update: {},
     create: {
       username: "editor1",
@@ -82,7 +82,7 @@ export async function seed() {
     const existingDoc = await mongo.doc.findFirst({
       where: {
         title: `testdoc-${domain.name}`,
-        domainId: String(domain.id),
+        domainId: String(domain.id), // force string match
       },
     });
 
@@ -95,8 +95,8 @@ export async function seed() {
             <img src="https://png.pngtree.com/png-vector/20210604/ourmid/pngtree-gray-network-placeholder-png-image_3416659.jpg"
                  alt="placeholder" style="max-width:100%; height:auto;" />
           `,
-          domainId: String(domain.id),
-          authorId: String(superadmin.id),
+          domainId: String(domain.id),      // force string
+          authorId: String(superadmin.id),  // force string
         },
       });
       console.log(`✅ Sample document "testdoc-${domain.name}" created for domain ${domain.name}`);
@@ -108,15 +108,12 @@ export async function seed() {
   console.log("🎉 Database seeding completed!");
 }
 
-// If called directly (npm run seed)
-if (require.main === module) {
-  seed()
-    .catch((e) => {
-      console.error("❌ Seeding error:", e);
-      process.exit(1);
-    })
-    .finally(async () => {
-      await postgres.$disconnect();
-      await mongo.$disconnect();
-    });
-}
+main()
+  .catch((e) => {
+    console.error("❌ Seeding error:", e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await postgres.$disconnect();
+    await mongo.$disconnect();
+  });
