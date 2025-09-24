@@ -8,7 +8,7 @@
       "setup": "node scripts/setup.js",
       "check": "node scripts/check-setup.js",
       "seed": "node scripts/seed.js",
-      "postinstall": "npm run db:generate && ",
+      "postinstall": "npm run db:generate ",
       "db:push:postgres": "npx prisma db push --schema=./prisma/schema.postgres.prisma",
       "db:push:mongo": "npx prisma db push --schema=./prisma/schema.mongo.prisma",
       "db:generate": "npx prisma generate --schema=./prisma/schema.postgres.prisma && npx prisma generate --schema=./prisma/schema.mongo.prisma"
