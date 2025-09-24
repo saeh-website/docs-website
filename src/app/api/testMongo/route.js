@@ -5,16 +5,13 @@ export async function GET() {
   try {
     console.log("🌱 Testing MongoDB connection (Vercel)...");
 
-    // Try fetching some data from your main collections
+    // Prisma uses lowercase for model accessors: Doc → doc
     const docs = await prismaMongo.doc.findMany({ take: 5 });
-    const users = await prismaMongo.user.findMany({ take: 5 });
 
     return NextResponse.json({
       message: "MongoDB connection successful",
       docsCount: docs.length,
-      usersCount: users.length,
       sampleDocs: docs,
-      sampleUsers: users,
     });
   } catch (err) {
     console.error("❌ MongoDB connection error (Vercel):", err);
