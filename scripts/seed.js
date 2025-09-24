@@ -80,7 +80,10 @@ async function main() {
   // --- Sample documents in Mongo for all domains ---
   for (const domain of domains) {
     const existingDoc = await mongo.doc.findFirst({
-      where: { title: `testdoc-${domain.name}`, domainId: domain.id },
+      where: {
+        title: `testdoc-${domain.name}`,
+        domainId: String(domain.id), // force string match
+      },
     });
 
     if (!existingDoc) {
@@ -92,8 +95,8 @@ async function main() {
             <img src="https://png.pngtree.com/png-vector/20210604/ourmid/pngtree-gray-network-placeholder-png-image_3416659.jpg"
                  alt="placeholder" style="max-width:100%; height:auto;" />
           `,
-          domainId: domain.id,
-          authorId: superadmin.id,
+          domainId: String(domain.id),      // force string
+          authorId: String(superadmin.id),  // force string
         },
       });
       console.log(`✅ Sample document "testdoc-${domain.name}" created for domain ${domain.name}`);
