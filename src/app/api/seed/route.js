@@ -1,26 +1,46 @@
 import { seed } from "../../../../scripts/seed";
+import { prismaPostgres } from "@/lib/prismaPostgres";
+import { prismaMongo } from "@/lib/prismaMongo";
 import { NextResponse } from "next/server";
 
-// Allow GET to trigger seed for debugging in Chrome
-export async function GET() {
+async function runSeed(method) {
   try {
-    console.log("🔎 Seeding triggered via GET request...");
+    console.log(`🔎 Seeding triggered via ${method} request...`);
+
+    const pgModels = Object.keys(prismaPostgres);
+    const mgModels = Object.keys(prismaMongo);
+
+    console.log("🔎 Postgres models available:", pgModels);
+    console.log("🔎 Mongo models available:", mgModels);
+
     await seed();
-    return NextResponse.json({ message: "✅ Seeding completed (via GET)" });
+
+    return NextResponse.json({
+      message: `✅ Seeding completed (via ${method})`,
+      postgresModels: pgModels,
+      mongoModels: mgModels,
+    });
   } catch (err) {
-    console.error("❌ Seeding error (GET):", err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    const pgModels = Object.keys(prismaPostgres);
+    const mgModels = Object.keys(prismaMongo);
+
+    console.error(`❌ Seeding error (${method}):`, err);
+
+    return NextResponse.json(
+      {
+        error: err.message,
+        postgresModels: pgModels,
+        mongoModels: mgModels,
+      },
+      { status: 500 }
+    );
   }
 }
 
-// Keep POST for programmatic/manual triggering (e.g. curl or API client)
+export async function GET() {
+  return runSeed("GET");
+}
+
 export async function POST() {
-  try {
-    console.log("🔎 Seeding triggered via POST request...");
-    await seed();
-    return NextResponse.json({ message: "✅ Seeding completed (via POST)" });
-  } catch (err) {
-    console.error("❌ Seeding error (POST):", err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
-  }
+  return runSeed("POST");
 }
