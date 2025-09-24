@@ -1,7 +1,15 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from '@prisma/client';
 
-const globalForPrisma = global
+let prismaPostgres;
 
-export const prismaPostgres = globalForPrisma.prismaPostgres || new PrismaClient()
+if (process.env.NODE_ENV === 'production') {
+  prismaPostgres = new PrismaClient();
+} else {
+  // Prevent multiple instances during hot reloads in dev
+  if (!global.prismaPostgres) {
+    global.prismaPostgres = new PrismaClient();
+  }
+  prismaPostgres = global.prismaPostgres;
+}
 
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prismaPostgres = prismaPostgres
+export { prismaPostgres };

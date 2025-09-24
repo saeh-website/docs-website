@@ -1,16 +1,17 @@
 'use client';
-import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
-import axios from 'axios';
-import { Add } from '@mui/icons-material';
-import Editor from '@/components/Editor';
+
+import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
+import axios from "axios";
+import { Add } from "@mui/icons-material";
+import Editor from "@/components/Editor";
 
 export default function DocsPage() {
   const { data: session } = useSession();
   const [showForm, setShowForm] = useState(false);
-  const [title, setTitle] = useState('');
-  const [domainId, setDomainId] = useState('');
-  const [content, setContent] = useState('');
+  const [title, setTitle] = useState("");
+  const [domainId, setDomainId] = useState("");
+  const [content, setContent] = useState("");
   const [domains, setDomains] = useState([]);
   const [docs, setDocs] = useState([]);
 
@@ -20,7 +21,7 @@ export default function DocsPage() {
   useEffect(() => {
     if (user) {
       setDomains(user.userDomains || []);
-      setDomainId(user.currentDomain?.domainId || '');
+      setDomainId(user.currentDomain?.domainId || "");
       fetchDocs(user.currentDomain?.domainId);
     }
   }, [user]);
@@ -31,20 +32,19 @@ export default function DocsPage() {
       const res = await axios.get(`/api/docs?domainId=${domainId}`);
       setDocs(res.data || []);
     } catch (err) {
-      console.error('Fetch docs error:', err);
+      console.error("Fetch docs error:", err);
     }
   };
 
   const handleSave = async () => {
-    if (!title || !domainId || !content) return alert('الرجاء تعبئة جميع الحقول');
-
+    if (!title || !domainId || !content) return alert("الرجاء تعبئة جميع الحقول");
     try {
-      await axios.post('/api/docs/add', { title, content, domainId });
+      await axios.post("/api/docs/add", { title, content, domainId });
       fetchDocs(domainId);
       handleClose();
     } catch (err) {
-      console.error('Save error:', err);
-      alert('حدث خطأ أثناء حفظ المستند');
+      console.error("Save error:", err);
+      alert("حدث خطأ أثناء حفظ المستند");
     }
   };
 
@@ -57,14 +57,14 @@ export default function DocsPage() {
   const handleAddClick = () => setShowForm(true);
   const handleClose = () => {
     setShowForm(false);
-    setTitle('');
-    setContent('');
-    setDomainId(user.currentDomain?.domainId || '');
+    setTitle("");
+    setContent("");
+    setDomainId(user.currentDomain?.domainId || "");
   };
 
   return (
     <div className="p-6 relative">
-      {['superadmin', 'doc_admin', 'site_admin'].includes(userRole) && (
+      {["superadmin", "doc_admin", "site_admin"].includes(userRole) && (
         <div className="absolute top-24 left-6 z-10">
           <button onClick={handleAddClick} className="btn flex items-center">
             <Add className="ml-2" /> إضافة مستند
@@ -75,15 +75,9 @@ export default function DocsPage() {
       <h1 className="text-3xl font-bold mb-6 text-center">المستندات</h1>
 
       <div className="flex justify-center mb-6">
-        <select
-          value={domainId}
-          onChange={handleDomainChange}
-          className="form-control w-1/2"
-        >
+        <select value={domainId} onChange={handleDomainChange} className="form-control w-1/2">
           <option value="">اختر مجال</option>
-          {domains.map((d) => (
-            <option key={d.domainId} value={d.domainId}>{d.domainName}</option>
-          ))}
+          {domains.map((d) => <option key={d.domainId} value={d.domainId}>{d.domainName}</option>)}
         </select>
       </div>
 

@@ -18,24 +18,14 @@ export const authOptions = {
 
         const user = await prismaPostgres.user.findUnique({
           where: { username: credentials.username },
-          include: {
-            userDomains: { include: { domain: true } },
-          },
+          include: { userDomains: { include: { domain: true } } },
         });
 
-        if (!user || !user.password) {
-          throw new Error("Invalid credentials");
-        }
+        if (!user || !user.password) throw new Error("Invalid credentials");
 
-        const isPasswordMatch = await bcrypt.compare(
-          credentials.password,
-          user.password
-        );
-        if (!isPasswordMatch) {
-          throw new Error("Invalid credentials");
-        }
+        const isPasswordMatch = await bcrypt.compare(credentials.password, user.password);
+        if (!isPasswordMatch) throw new Error("Invalid credentials");
 
-        // Normalize return object for JWT
         return {
           id: user.id,
           username: user.username,
@@ -51,10 +41,7 @@ export const authOptions = {
     }),
   ],
 
-  session: {
-    strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60, // 30 days
-  },
+  session: { strategy: "jwt", maxAge: 30 * 24 * 60 * 60 },
 
   callbacks: {
     async jwt({ token, user }) {
@@ -64,25 +51,12 @@ export const authOptions = {
         token.profilePicture = user.profilePicture;
         token.userDomains = user.userDomains || [];
 
-        // Pick current domain
         let currentDomain =
-          user.userDomains.find((d) => d.isDefault) ||
-          (user.userDomains.length === 1 ? user.userDomains[0] : null);
-
-        // Fallback: use first domain if exists
-        if (!currentDomain && user.userDomains.length > 0) {
-          currentDomain = user.userDomains[0];
-        }
+          user.userDomains.find((d) => d.isDefault) || user.userDomains[0] || null;
 
         token.currentDomain = currentDomain;
         token.role = currentDomain?.userRole || null;
         token.requiresDomainSelection = user.userDomains.length > 1;
-
-        console.log("JWT Callback →", {
-          username: token.username,
-          role: token.role,
-          currentDomain,
-        });
       }
       return token;
     },
@@ -98,16 +72,12 @@ export const authOptions = {
           role: token.role,
           requiresDomainSelection: token.requiresDomainSelection,
         };
-
-        console.log("Session Callback →", session.user);
       }
       return session;
     },
   },
 
-  pages: {
-    signIn: "/",
-  },
+  pages: { signIn: "/" },
 
   secret: process.env.NEXTAUTH_SECRET,
 };

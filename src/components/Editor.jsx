@@ -3,6 +3,7 @@
 import dynamic from 'next/dynamic';
 import { useState, useEffect } from 'react';
 
+// Dynamically import ReactQuill to prevent SSR issues
 const ReactQuill = dynamic(() => import('react-quill'), {
   ssr: false,
   loading: () => <div>Loading editor...</div>,
@@ -32,7 +33,7 @@ export default function Editor({
     onChange?.(newContent);
   };
 
-  // Only show domains the user can post to
+  // Filter domains based on user role
   const availableDomains = domains.filter((d) => {
     if (['superadmin', 'doc_admin'].includes(currentUserRole)) return true;
     if (currentUserRole === 'site_admin') {
@@ -87,18 +88,29 @@ export default function Editor({
         <ReactQuill
           value={content}
           onChange={handleContentChange}
+          theme="snow"
+          style={{ direction: 'rtl', textAlign: 'right', minHeight: '200px' }}
           modules={{
             toolbar: [
               [{ header: '1' }, { header: '2' }, { font: [] }],
               [{ list: 'ordered' }, { list: 'bullet' }],
-              ['bold', 'italic', 'underline'],
+              ['bold', 'italic', 'underline', 'strike'],
               ['link', 'image'],
               ['clean'],
             ],
           }}
-          formats={['header', 'font', 'list', 'bullet', 'bold', 'italic', 'underline', 'link', 'image']}
-          theme="snow"
-          style={{ direction: 'rtl', textAlign: 'right', minHeight: '200px' }}
+          formats={[
+            'header',
+            'font',
+            'list',
+            'bullet',
+            'bold',
+            'italic',
+            'underline',
+            'strike',
+            'link',
+            'image',
+          ]}
         />
       </div>
     </div>
