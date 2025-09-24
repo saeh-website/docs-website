@@ -75,14 +75,15 @@ export const authOptions = {
         const defaultDomain = user.userDomains?.find(d => d.isDefault)
         if (defaultDomain) {
           token.currentDomain = defaultDomain
-          token.requiresDomainSelection = false
         } else if (user.userDomains?.length === 1) {
           token.currentDomain = user.userDomains[0]
-          token.requiresDomainSelection = false
         } else {
           token.currentDomain = null
-          token.requiresDomainSelection = user.userDomains?.length > 1
         }
+        
+        token.role = token.currentDomain?.userRole || null
+        token.requiresDomainSelection = user.userDomains?.length > 1
+
       }
       return token
     },
@@ -94,6 +95,7 @@ export const authOptions = {
           profilePicture: token.profilePicture,
           userDomains: token.userDomains,
           currentDomain: token.currentDomain,
+          role: token.role,
           requiresDomainSelection: token.requiresDomainSelection,
         }
       }

@@ -30,17 +30,20 @@ export default function Sidebar({ isOpen, toggle }) {
   };
 
   const navLinkClasses = "block text-white text-lg hover:underline py-2";
-  const userRole = (user.role || user.currentDomain?.userRole || "").toLowerCase();
+  const rawRole = user.role || user.currentDomain?.userRole || "";
+  const userRole = rawRole?.toString().trim().toLowerCase();
+  
+  console.log("Sidebar → full user object:", user);
+  console.log("Sidebar → raw role:", rawRole);
+  console.log("Sidebar → normalized role:", userRole);
  // Use the role from the current domain
 
- console.log("Sidebar → full user object:", user);
-console.log("Sidebar → resolved role:", userRole);
 
 
   return (
     <>
-    <p style={{ color: "red" }}>
-  DEBUG ROLE: {user.role} | {user.currentDomain?.userRole}
+   <p style={{ color: "red" }}>
+  DEBUG ROLE: {user.role} | {user.currentDomain?.userRole} | normalized: {userRole}
 </p>
       <div
         className={`
