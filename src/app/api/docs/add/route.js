@@ -1,49 +1,35 @@
-import clientPromise from "@/lib/mongodb";
-import { getServerSession } from "next-auth";
-import { authOptions } from "../../auth/[...nextauth]/route";
+import { NextResponse } from "next/server";
+import { prismaMongo } from "@/lib/prismaMongo";
 
 export async function POST(req) {
   try {
-    const session = await getServerSession(authOptions);
+    const body = await req.json();
+    const { title, domainId, content, authorId } = body;
 
-    if (!session) {
-      return new Response(
-        JSON.stringify({ success: false, error: "Unauthorized" }),
-        { status: 401 }
-      );
-    }
-
-    const { title, domainId, content } = await req.json();
-
+    // ✅ Validate required fields
     if (!title || !domainId || !content) {
-      return new Response(
-        JSON.stringify({ success: false, error: "Missing fields" }),
+      return NextResponse.json(
+        { error: "Missing required fields" },
         { status: 400 }
       );
     }
 
-    // Connect to MongoDB
-    const client = await clientPromise;
-    const db = client.db("docsdb"); // 👈 change if your DB name is different
+    // ✅ Save document into MongoDB via Prisma
+    const newDoc = await prismaMongo.docs.create({
+      data: {
+        title,
+        domainId,
+        content,
+        authorId: authorId || null,
+        createdAt: new Date(),
+      },
+    });
 
-    const newDoc = {
-      title,
-      domainId,
-      content,
-      createdBy: session.user.id,
-      createdAt: new Date(),
-    };
-
-    const result = await db.collection("docs").insertOne(newDoc);
-
-    return new Response(
-      JSON.stringify({ success: true, id: result.insertedId }),
-      { status: 201 }
-    );
+    return NextResponse.json({ success: true, doc: newDoc }, { status: 201 });
   } catch (error) {
     console.error("❌ Error adding doc:", error);
-    return new Response(
-      JSON.stringify({ success: false, error: "Server error" }),
+    return NextResponse.json(
+      { error: "Failed to add doc" },
       { status: 500 }
     );
   }
