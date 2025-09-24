@@ -1,35 +1,39 @@
-// src/app/api/docs/add/route.js
-import { NextResponse } from 'next/server'
-import { prismaMongo } from '@/lib/prismaMongo'
+import { getServerSession } from 'next-auth';
+import { authOptions } from '../auth/[...nextauth]/route';
+import { prismaMongo } from '@/lib/prismaMongo';
+import { NextResponse } from 'next/server';
 
-export async function POST(req) {
+export async function POST(request) {
   try {
-    const body = await req.json()
-    const { title, content, domainId } = body
+    const session = await getServerSession(authOptions);
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    if (!title || !content || !domainId) {
-      return NextResponse.json(
-        { error: 'Title, content, and domainId are required' },
-        { status: 400 }
-      )
+    const role = session.user.currentDomain?.userRole;
+    if (!['site_admin', 'doc_admin', 'superadmin'].includes(role))
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+
+    const { title, content, domainId } = await request.json();
+    if (!title || !content) return NextResponse.json({ error: 'Title and content required' }, { status: 400 });
+
+    if (role === 'site_admin') {
+      const hasAccess = session.user.userDomains?.some(
+        (ud) => ud.domainId === domainId && ud.userRole === 'site_admin'
+      );
+      if (!hasAccess) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Insert new document into MongoDB
-    const newDoc = await prismaMongo.doc.create({
+    const doc = await prismaMongo.doc.create({
       data: {
         title,
         content,
-        domainId,
-        createdAt: new Date(),
+        domainId: domainId || session.user.currentDomain.domainId,
+        authorId: session.user.id,
       },
-    })
+    });
 
-    return NextResponse.json(newDoc, { status: 201 })
-  } catch (error) {
-    console.error('Error adding document:', error)
-    return NextResponse.json(
-      { error: 'Failed to add document' },
-      { status: 500 }
-    )
+    return NextResponse.json(doc, { status: 201 });
+  } catch (err) {
+    console.error('POST /api/docs/add error:', err);
+    return NextResponse.json({ error: err.message || 'Error creating doc' }, { status: 500 });
   }
 }

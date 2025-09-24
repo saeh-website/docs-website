@@ -13,9 +13,9 @@ import 'react-quill/dist/quill.snow.css';
 export default function Editor({
   value,
   onChange,
-  domains,
-  currentUserRole,
-  currentUserDomains,
+  domains = [],
+  currentUserRole = '',
+  currentUserDomains = [],
   title,
   setTitle,
   domainId,
@@ -32,32 +32,11 @@ export default function Editor({
     onChange?.(newContent);
   };
 
-  const modules = {
-    toolbar: [
-      [{ header: '1' }, { header: '2' }, { font: [] }],
-      [{ list: 'ordered' }, { list: 'bullet' }],
-      ['bold', 'italic', 'underline'],
-      ['link', 'image'],
-      ['clean'],
-    ],
-  };
-
-  const formats = [
-    'header',
-    'font',
-    'list',
-    'bullet',
-    'bold',
-    'italic',
-    'underline',
-    'link',
-    'image',
-  ];
-
+  // Only show domains the user can post to
   const availableDomains = domains.filter((d) => {
     if (['superadmin', 'doc_admin'].includes(currentUserRole)) return true;
     if (currentUserRole === 'site_admin') {
-      return currentUserDomains.some(
+      return currentUserDomains?.some(
         (ud) => ud.domainId === d.domainId && ud.userRole === 'site_admin'
       );
     }
@@ -89,7 +68,7 @@ export default function Editor({
       </div>
 
       {/* Title Input */}
-      <div className="form-group">
+      <div className="form-group mt-3">
         <label>العنوان:</label>
         <input
           type="text"
@@ -103,13 +82,21 @@ export default function Editor({
       </div>
 
       {/* Content Editor */}
-      <div className="form-group">
+      <div className="form-group mt-3">
         <label>المحتوى:</label>
         <ReactQuill
           value={content}
           onChange={handleContentChange}
-          modules={modules}
-          formats={formats}
+          modules={{
+            toolbar: [
+              [{ header: '1' }, { header: '2' }, { font: [] }],
+              [{ list: 'ordered' }, { list: 'bullet' }],
+              ['bold', 'italic', 'underline'],
+              ['link', 'image'],
+              ['clean'],
+            ],
+          }}
+          formats={['header', 'font', 'list', 'bullet', 'bold', 'italic', 'underline', 'link', 'image']}
           theme="snow"
           style={{ direction: 'rtl', textAlign: 'right', minHeight: '200px' }}
         />

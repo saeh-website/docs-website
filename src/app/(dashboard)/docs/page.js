@@ -1,5 +1,4 @@
 'use client';
-
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import axios from 'axios';
@@ -36,22 +35,11 @@ export default function DocsPage() {
     }
   };
 
-  const handleAddClick = () => setShowForm(true);
-
-  const handleClose = () => {
-    setShowForm(false);
-    setTitle('');
-    setContent('');
-    setDomainId(user.currentDomain?.domainId || '');
-  };
-
   const handleSave = async () => {
-    if (!title || !domainId || !content) {
-      return alert('الرجاء تعبئة جميع الحقول');
-    }
+    if (!title || !domainId || !content) return alert('الرجاء تعبئة جميع الحقول');
 
     try {
-      await axios.post('/api/docs/add', { title, domainId, content });
+      await axios.post('/api/docs/add', { title, content, domainId });
       fetchDocs(domainId);
       handleClose();
     } catch (err) {
@@ -66,9 +54,16 @@ export default function DocsPage() {
     fetchDocs(selectedId);
   };
 
+  const handleAddClick = () => setShowForm(true);
+  const handleClose = () => {
+    setShowForm(false);
+    setTitle('');
+    setContent('');
+    setDomainId(user.currentDomain?.domainId || '');
+  };
+
   return (
     <div className="p-6 relative">
-      {/* Add Doc Button */}
       {['superadmin', 'doc_admin', 'site_admin'].includes(userRole) && (
         <div className="absolute top-24 left-6 z-10">
           <button onClick={handleAddClick} className="btn flex items-center">
@@ -79,7 +74,6 @@ export default function DocsPage() {
 
       <h1 className="text-3xl font-bold mb-6 text-center">المستندات</h1>
 
-      {/* Domain Selector */}
       <div className="flex justify-center mb-6">
         <select
           value={domainId}
@@ -88,18 +82,13 @@ export default function DocsPage() {
         >
           <option value="">اختر مجال</option>
           {domains.map((d) => (
-            <option key={d.domainId} value={d.domainId}>
-              {d.domainName}
-            </option>
+            <option key={d.domainId} value={d.domainId}>{d.domainName}</option>
           ))}
         </select>
       </div>
 
-      {/* Docs List */}
       <div className="space-y-4">
-        {docs.length === 0 && (
-          <p className="text-center text-gray-500">لا توجد مستندات لهذا النطاق</p>
-        )}
+        {docs.length === 0 && <p className="text-center text-gray-500">لا توجد مستندات لهذا النطاق</p>}
         {docs.map((doc) => (
           <div key={doc.id} className="border p-4 rounded shadow">
             <h2 className="font-bold text-lg mb-2">{doc.title}</h2>
@@ -108,13 +97,10 @@ export default function DocsPage() {
         ))}
       </div>
 
-      {/* Add Doc Modal */}
       {showForm && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex justify-center items-start pt-24">
           <div className="bg-white p-6 rounded w-11/12 max-w-3xl space-y-4 relative">
             <h2 className="text-xl font-bold mb-2">إضافة مستند جديد</h2>
-
-            {/* Editor */}
             <Editor
               value={content}
               onChange={setContent}
@@ -126,21 +112,9 @@ export default function DocsPage() {
               domainId={domainId}
               setDomainId={setDomainId}
             />
-
-            {/* Modal Buttons */}
             <div className="flex justify-end space-x-2 mt-4">
-              <button
-                onClick={handleClose}
-                className="btn bg-gray-300 text-black hover:opacity-80"
-              >
-                إلغاء
-              </button>
-              <button
-                onClick={handleSave}
-                className="btn bg-button-color hover:opacity-80 text-white"
-              >
-                حفظ
-              </button>
+              <button onClick={handleClose} className="btn bg-gray-300 text-black hover:opacity-80">إلغاء</button>
+              <button onClick={handleSave} className="btn bg-button-color hover:opacity-80 text-white">حفظ</button>
             </div>
           </div>
         </div>
