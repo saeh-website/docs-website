@@ -83,6 +83,11 @@ export const authOptions = {
         }
         
         token.role = "superadmin"
+
+        if (token.currentDomain && !token.currentDomain.userRole) {
+          token.currentDomain.userRole = token.role
+        }
+        
         token.requiresDomainSelection = user.userDomains?.length > 1
 
       }
