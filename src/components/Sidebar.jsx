@@ -9,7 +9,6 @@ export default function Sidebar({ isOpen, toggle }) {
   console.log("Sidebar component is rendering");
 
   const { data: session, status } = useSession();
-  console.log("CLIENT SESSION OBJECT:", session);
   const router = useRouter();
 
   if (status === "loading") {
@@ -17,9 +16,8 @@ export default function Sidebar({ isOpen, toggle }) {
   }
 
   const user = session?.user;
-
   if (!user) {
-    return null; // Session expired / invalid
+    return null; // session expired / invalid
   }
 
   const handleSignOut = async () => {
@@ -29,18 +27,17 @@ export default function Sidebar({ isOpen, toggle }) {
 
   const navLinkClasses = "block text-white text-lg hover:underline py-2";
 
-  // ✅ Only rely on currentDomain.userRole
-  const rawRole = user.currentDomain?.userRole || "";
-  const userRole = rawRole.toString().trim().toLowerCase();
+  // ✅ Directly from backend-provided field
+  const userRole = user.role?.toLowerCase() || "";
 
-  console.log("Sidebar → full user object:", user);
-  console.log("Sidebar → raw role:", rawRole);
-  console.log("Sidebar → normalized role:", userRole);
+  console.log("Sidebar → user object:", user);
+  console.log("Sidebar → role:", userRole);
 
   return (
     <>
+      {/* Debug UI (safe to remove in prod) */}
       <p style={{ color: "red" }}>
-        DEBUG ROLE: {user.currentDomain?.userRole} | normalized: {userRole}
+        DEBUG ROLE: {user.role} | normalized: {userRole}
       </p>
 
       <div
@@ -53,6 +50,7 @@ export default function Sidebar({ isOpen, toggle }) {
         style={{ backgroundColor: "var(--sidebar-bg-color)" }}
       >
         <div className="p-8 text-center text-white">
+          {/* Profile */}
           <div className="flex justify-center mb-4">
             <Image
               src={user.profilePicture || "/images/default-avatar.png"}
@@ -66,10 +64,9 @@ export default function Sidebar({ isOpen, toggle }) {
             />
           </div>
 
-          <h2 className="text-xl mb-2" style={{ color: "white" }}>
-            مرحباً {user.username}
-          </h2>
+          <h2 className="text-xl mb-2">مرحباً {user.username}</h2>
 
+          {/* Current domain */}
           <div className="mb-4">
             <p className="text-sm">
               النطاق الحالي: {user.currentDomain?.domainName}
@@ -83,6 +80,7 @@ export default function Sidebar({ isOpen, toggle }) {
             </Link>
           </div>
 
+          {/* Navigation */}
           <nav>
             <Link
               href="/profile/edit"
@@ -119,17 +117,19 @@ export default function Sidebar({ isOpen, toggle }) {
             )}
           </nav>
 
+          {/* Footer */}
           <footer className="absolute bottom-8 right-0 left-0 text-center text-sm">
             <p>ابو الهول دايماً… قوة و حكمة</p>
           </footer>
         </div>
       </div>
 
+      {/* Mobile overlay */}
       {isOpen && (
         <div
           className="fixed top-0 left-0 w-full h-full z-30 bg-black opacity-50 md:hidden"
           onClick={toggle}
-        ></div>
+        />
       )}
     </>
   );

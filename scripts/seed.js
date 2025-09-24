@@ -1,106 +1,85 @@
-const { PrismaClient } = require('@prisma/client-postgres');
+const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
 
-// Create Prisma client for PostgreSQL
-const prismaPostgres = new PrismaClient();
+const prisma = new PrismaClient();
 
 async function main() {
   console.log('🌱 Starting database seed...');
 
   // Create default domains
-  const domains = await Promise.all([
-    prismaPostgres.domain.upsert({
-      where: { name: 'option1' },
-      update: {},
-      create: { name: 'option1' },
-    }),
-    prismaPostgres.domain.upsert({
-      where: { name: 'option2' },
-      update: {},
-      create: { name: 'option2' },
-    }),
-    prismaPostgres.domain.upsert({
-      where: { name: 'option3' },
-      update: {},
-      create: { name: 'option3' },
-    }),
-  ]);
+  const domainNames = ['option1', 'option2', 'option3'];
+  const domains = await Promise.all(
+    domainNames.map((name) =>
+      prisma.domain.upsert({
+        where: { name },
+        update: {},
+        create: { name },
+      })
+    )
+  );
+  console.log('✅ Domains created:', domainNames);
 
-  console.log('✅ Domains created:', domains.map(d => d.name));
+  // Helper: hash password
+  const hash = (pw) => bcrypt.hash(pw, 12);
 
-  // Create superadmin user
-  const hashedPassword = await bcrypt.hash('admin123', 12);
-  
-  const superadmin = await prismaPostgres.user.upsert({
+  // Superadmin
+  await prisma.user.upsert({
     where: { username: 'superadmin' },
     update: {},
     create: {
       username: 'superadmin',
-      password: hashedPassword,
+      password: await hash('admin123'),
       profilePicture: '/images/default-avatar.png',
       userDomains: {
-        create: domains.map(domain => ({
+        create: domains.map((domain, idx) => ({
           domainId: domain.id,
           userRole: 'superadmin',
+          isDefault: idx === 0, // first domain is default
         })),
       },
     },
-    include: {
-      userDomains: {
-        include: {
-          domain: true,
-        },
-      },
-    },
   });
+  console.log('✅ Superadmin: superadmin / admin123');
 
-  console.log('✅ Superadmin user created: superadmin / admin123');
-
-  // Create sample site_admin user for option1
-  const siteAdminPassword = await bcrypt.hash('siteadmin123', 12);
-  const siteAdmin = await prismaPostgres.user.upsert({
+  // Site Admin (option1 only)
+  await prisma.user.upsert({
     where: { username: 'siteadmin1' },
     update: {},
     create: {
       username: 'siteadmin1',
-      password: siteAdminPassword,
+      password: await hash('siteadmin123'),
       profilePicture: '/images/default-avatar.png',
       userDomains: {
         create: {
-          domainId: domains[0].id, // option1
+          domainId: domains[0].id,
           userRole: 'site_admin',
+          isDefault: true,
         },
       },
     },
   });
+  console.log('✅ Site Admin: siteadmin1 / siteadmin123');
 
-  console.log('✅ Site Admin user created: siteadmin1 / siteadmin123');
-
-  // Create sample editor user
-  const editorPassword = await bcrypt.hash('editor123', 12);
-  const editor = await prismaPostgres.user.upsert({
+  // Editor (option1 only)
+  await prisma.user.upsert({
     where: { username: 'editor1' },
     update: {},
     create: {
       username: 'editor1',
-      password: editorPassword,
+      password: await hash('editor123'),
       profilePicture: '/images/default-avatar.png',
       userDomains: {
         create: {
-          domainId: domains[0].id, // option1
+          domainId: domains[0].id,
           userRole: 'editor',
+          isDefault: true,
         },
       },
     },
   });
-
-  console.log('✅ Editor user created: editor1 / editor123');
+  console.log('✅ Editor: editor1 / editor123');
 
   console.log('🎉 Database seeding completed!');
-  console.log('\n📋 Default login credentials:');
-  console.log('Superadmin: superadmin / admin123 (all domains)');
-  console.log('Site Admin: siteadmin1 / siteadmin123 (option1 only)');
-  console.log('Editor: editor1 / editor123 (option1 only)');
 }
 
 main()
@@ -109,5 +88,5 @@ main()
     process.exit(1);
   })
   .finally(async () => {
-    await prismaPostgres.$disconnect();
+    await prisma.$disconnect();
   });
