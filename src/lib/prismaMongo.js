@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client"; // Use the standard Prisma client
+import { PrismaClient } from "@prisma/client-mongo"; // Use the standard Prisma client
 
 let prismaMongo;
 
