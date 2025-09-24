@@ -1,4 +1,4 @@
-import seed from "@/scripts/seed"; // adjust if path is different
+import { seed } from "../../../scripts/seed";
 import { NextResponse } from "next/server";
 
 export async function POST() {
