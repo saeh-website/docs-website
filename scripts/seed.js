@@ -1,9 +1,16 @@
-import { prismaPostgres } from "@/lib/prismaPostgres";
-import { prismaMongo } from "@/lib/prismaMongo";
+import { prismaPostgres } from "../src/lib/prismaPostgres";
+import { prismaMongo } from "../src/lib/prismaMongo";
 import bcrypt from "bcryptjs";
 
 const postgres = prismaPostgres;
 const mongo = prismaMongo;
+
+// Normalize Postgres models (handle User vs user casing differences)
+const pgUser = postgres.User ?? postgres.user;
+const pgDomain = postgres.Domain ?? postgres.domain;
+
+// Normalize Mongo models
+const mgDoc = mongo.Doc ?? mongo.doc;
 
 export async function seed() {
   console.log("🌱 Starting database seed...");
@@ -12,7 +19,7 @@ export async function seed() {
   const domainNames = ["option1", "option2", "option3"];
   const domains = await Promise.all(
     domainNames.map((name) =>
-      postgres.Domain.upsert({
+      pgDomain.upsert({
         where: { name },
         update: {},
         create: { name },
@@ -24,7 +31,7 @@ export async function seed() {
   const hash = (pw) => bcrypt.hash(pw, 12);
 
   // --- Superadmin ---
-  const superadmin = await postgres.User.upsert({
+  const superadmin = await pgUser.upsert({
     where: { username: "superadmin" },
     update: {},
     create: {
@@ -42,7 +49,7 @@ export async function seed() {
   });
 
   // --- Site Admin ---
-  await postgres.User.upsert({
+  await pgUser.upsert({
     where: { username: "siteadmin1" },
     update: {},
     create: {
@@ -60,7 +67,7 @@ export async function seed() {
   });
 
   // --- Editor ---
-  await postgres.User.upsert({
+  await pgUser.upsert({
     where: { username: "editor1" },
     update: {},
     create: {
@@ -79,7 +86,7 @@ export async function seed() {
 
   // --- Sample documents in Mongo for all domains ---
   for (const domain of domains) {
-    const existingDoc = await mongo.Doc.findFirst({
+    const existingDoc = await mgDoc.findFirst({
       where: {
         title: `testdoc-${domain.name}`,
         domainId: String(domain.id),
@@ -87,7 +94,7 @@ export async function seed() {
     });
 
     if (!existingDoc) {
-      await mongo.Doc.create({
+      await mgDoc.create({
         data: {
           title: `testdoc-${domain.name}`,
           content: `
@@ -106,7 +113,7 @@ export async function seed() {
   }
 
   console.log("🎉 Database seeding completed!");
-  
+
   // disconnect clients
   await postgres.$disconnect();
   await mongo.$disconnect();
