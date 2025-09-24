@@ -8,106 +8,111 @@ const mongo = prismaMongo;
 export async function seed() {
   console.log("🌱 Starting database seed...");
 
-  // --- Create default domains in Postgres ---
-  const domainNames = ["option1", "option2", "option3"];
-  const domains = await Promise.all(
-    domainNames.map((name) =>
-      postgres.domain.upsert({
-        where: { name },
-        update: {},
-        create: { name },
-      })
-    )
-  );
-  console.log("✅ Domains created:", domainNames);
+  try {
+    // --- Create default domains in Postgres ---
+    const domainNames = ["option1", "option2", "option3"];
+    const domains = await Promise.all(
+      domainNames.map((name) =>
+        postgres.domain.upsert({
+          where: { name },
+          update: {},
+          create: { name },
+        })
+      )
+    );
+    console.log("✅ Domains created:", domainNames);
 
-  const hash = (pw) => bcrypt.hash(pw, 12);
+    const hash = (pw) => bcrypt.hash(pw, 12);
 
-  // --- Superadmin ---
-  const superadmin = await postgres.user.upsert({
-    where: { username: "superadmin" },
-    update: {},
-    create: {
-      username: "superadmin",
-      password: await hash("admin123"),
-      profilePicture: "/images/default-avatar.png",
-      userDomains: {
-        create: domains.map((domain, idx) => ({
-          domainId: domain.id,
-          userRole: "superadmin",
-          isDefault: idx === 0,
-        })),
-      },
-    },
-  });
-
-  // --- Site Admin ---
-  await postgres.user.upsert({
-    where: { username: "siteadmin1" },
-    update: {},
-    create: {
-      username: "siteadmin1",
-      password: await hash("siteadmin123"),
-      profilePicture: "/images/default-avatar.png",
-      userDomains: {
-        create: {
-          domainId: domains[0].id,
-          userRole: "site_admin",
-          isDefault: true,
+    // --- Superadmin ---
+    const superadmin = await postgres.user.upsert({
+      where: { username: "superadmin" },
+      update: {},
+      create: {
+        username: "superadmin",
+        password: await hash("admin123"),
+        profilePicture: "/images/default-avatar.png",
+        userDomains: {
+          create: domains.map((domain, idx) => ({
+            domainId: domain.id,
+            userRole: "superadmin",
+            isDefault: idx === 0,
+          })),
         },
-      },
-    },
-  });
-
-  // --- Editor ---
-  await postgres.user.upsert({
-    where: { username: "editor1" },
-    update: {},
-    create: {
-      username: "editor1",
-      password: await hash("editor123"),
-      profilePicture: "/images/default-avatar.png",
-      userDomains: {
-        create: {
-          domainId: domains[0].id,
-          userRole: "editor",
-          isDefault: true,
-        },
-      },
-    },
-  });
-
-  // --- Sample documents in Mongo for all domains ---
-  for (const domain of domains) {
-    const existingDoc = await mongo.doc.findFirst({
-      where: {
-        title: `testdoc-${domain.name}`,
-        domainId: String(domain.id), // force string match
       },
     });
 
-    if (!existingDoc) {
-      await mongo.doc.create({
-        data: {
+    // --- Site Admin ---
+    await postgres.user.upsert({
+      where: { username: "siteadmin1" },
+      update: {},
+      create: {
+        username: "siteadmin1",
+        password: await hash("siteadmin123"),
+        profilePicture: "/images/default-avatar.png",
+        userDomains: {
+          create: {
+            domainId: domains[0].id,
+            userRole: "site_admin",
+            isDefault: true,
+          },
+        },
+      },
+    });
+
+    // --- Editor ---
+    await postgres.user.upsert({
+      where: { username: "editor1" },
+      update: {},
+      create: {
+        username: "editor1",
+        password: await hash("editor123"),
+        profilePicture: "/images/default-avatar.png",
+        userDomains: {
+          create: {
+            domainId: domains[0].id,
+            userRole: "editor",
+            isDefault: true,
+          },
+        },
+      },
+    });
+
+    // --- Sample documents in Mongo for all domains ---
+    for (const domain of domains) {
+      const existingDoc = await mongo.doc.findFirst({
+        where: {
           title: `testdoc-${domain.name}`,
-          content: `
-            <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. هذه مستند تجريبي لنطاق ${domain.name}.</p>
-            <img src="https://png.pngtree.com/png-vector/20210604/ourmid/pngtree-gray-network-placeholder-png-image_3416659.jpg"
-                 alt="placeholder" style="max-width:100%; height:auto;" />
-          `,
           domainId: String(domain.id),
-          authorId: String(superadmin.id),
         },
       });
-      console.log(`✅ Sample document "testdoc-${domain.name}" created for domain ${domain.name}`);
-    } else {
-      console.log(`ℹ️ Sample document "testdoc-${domain.name}" already exists for domain ${domain.name}`);
-    }
-  }
 
-  console.log("🎉 Database seeding completed!");
-  
-  // disconnect clients to avoid open handles
-  await postgres.$disconnect();
-  await mongo.$disconnect();
+      if (!existingDoc) {
+        await mongo.doc.create({
+          data: {
+            title: `testdoc-${domain.name}`,
+            content: `
+              <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. هذه مستند تجريبي لنطاق ${domain.name}.</p>
+              <img src="https://png.pngtree.com/png-vector/20210604/ourmid/pngtree-gray-network-placeholder-png-image_3416659.jpg"
+                   alt="placeholder" style="max-width:100%; height:auto;" />
+            `,
+            domainId: String(domain.id),
+            authorId: String(superadmin.id),
+          },
+        });
+        console.log(`✅ Created "testdoc-${domain.name}" for domain ${domain.name}`);
+      } else {
+        console.log(`ℹ️ Skipped "testdoc-${domain.name}" (already exists)`);
+      }
+    }
+
+    console.log("🎉 Database seeding completed!");
+  } catch (err) {
+    console.error("❌ Seeding error:", err);
+    throw err;
+  } finally {
+    // disconnect clients to avoid open handles
+    await postgres.$disconnect();
+    await mongo.$disconnect();
+  }
 }
