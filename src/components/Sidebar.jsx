@@ -6,46 +6,43 @@ import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
 export default function Sidebar({ isOpen, toggle }) {
-  console.log("Sidebar component is rendering"); // 👈 this must appear
+  console.log("Sidebar component is rendering");
 
   const { data: session, status } = useSession();
   console.log("CLIENT SESSION OBJECT:", session);
   const router = useRouter();
 
   if (status === "loading") {
-    return <div>Loading...</div>; // Or a spinner component
+    return <div>Loading...</div>;
   }
 
-  // Use session data instead of placeholder
   const user = session?.user;
 
   if (!user) {
-    // This could happen if the session is invalid or expired
-    // You might want to redirect to login here
-    return null;
+    return null; // Session expired / invalid
   }
 
   const handleSignOut = async () => {
     await signOut({ redirect: false });
-    router.push("/"); // Redirect to login page after sign out
+    router.push("/");
   };
 
   const navLinkClasses = "block text-white text-lg hover:underline py-2";
-  const rawRole = user.role || user.currentDomain?.userRole || "";
-  const userRole = rawRole?.toString().trim().toLowerCase();
-  
+
+  // ✅ Only rely on currentDomain.userRole
+  const rawRole = user.currentDomain?.userRole || "";
+  const userRole = rawRole.toString().trim().toLowerCase();
+
   console.log("Sidebar → full user object:", user);
   console.log("Sidebar → raw role:", rawRole);
   console.log("Sidebar → normalized role:", userRole);
- // Use the role from the current domain
-
-
 
   return (
     <>
-   <p style={{ color: "red" }}>
-  DEBUG ROLE: {user.role} | {user.currentDomain?.userRole} | normalized: {userRole}
-</p>
+      <p style={{ color: "red" }}>
+        DEBUG ROLE: {user.currentDomain?.userRole} | normalized: {userRole}
+      </p>
+
       <div
         className={`
           h-full overflow-y-auto transition-all duration-300 ease-in-out
@@ -67,13 +64,16 @@ export default function Sidebar({ isOpen, toggle }) {
                 e.currentTarget.src = "/images/default-avatar.png";
               }}
             />
-          </div >
-          <h2 className="text-xl mb-2" style={{ color: "white" }}>مرحباً {user.username}</h2>
+          </div>
+
+          <h2 className="text-xl mb-2" style={{ color: "white" }}>
+            مرحباً {user.username}
+          </h2>
+
           <div className="mb-4">
             <p className="text-sm">
               النطاق الحالي: {user.currentDomain?.domainName}
             </p>
-            {/* Domain change functionality will be implemented later */}
             <Link
               href="#"
               className="text-sm hover:underline"
@@ -84,9 +84,14 @@ export default function Sidebar({ isOpen, toggle }) {
           </div>
 
           <nav>
-            <Link href="/profile/edit" className={navLinkClasses} style={{ fontSize: "1rem" }}>
+            <Link
+              href="/profile/edit"
+              className={navLinkClasses}
+              style={{ fontSize: "1rem" }}
+            >
               تعديل الملف الشخصي
             </Link>
+
             <button
               onClick={handleSignOut}
               className="w-full bg-[#e01f26] text-white font-bold py-2 px-4 rounded-lg hover:opacity-80 transition-opacity duration-300 my-4"
@@ -100,18 +105,18 @@ export default function Sidebar({ isOpen, toggle }) {
               Docs
             </Link>
 
+            {/* ✅ Role-based visibility */}
             {["site_admin", "doc_admin", "superadmin"].includes(userRole) && (
-  <Link href="/users" className={navLinkClasses}>
-    المستخدمون
-  </Link>
-)}
+              <Link href="/users" className={navLinkClasses}>
+                المستخدمون
+              </Link>
+            )}
 
-{["doc_admin", "superadmin"].includes(userRole) && (
-  <Link href="/domains" className={navLinkClasses}>
-    النطاقات
-  </Link>
-)}
-
+            {["doc_admin", "superadmin"].includes(userRole) && (
+              <Link href="/domains" className={navLinkClasses}>
+                النطاقات
+              </Link>
+            )}
           </nav>
 
           <footer className="absolute bottom-8 right-0 left-0 text-center text-sm">
@@ -119,6 +124,7 @@ export default function Sidebar({ isOpen, toggle }) {
           </footer>
         </div>
       </div>
+
       {isOpen && (
         <div
           className="fixed top-0 left-0 w-full h-full z-30 bg-black opacity-50 md:hidden"
