@@ -1,5 +1,5 @@
-import seed from "../../../../scripts/seed"; // adjust if path is different
 import { NextResponse } from "next/server";
+import { seed } from "../../../../scripts/seed";
 
 export async function POST() {
   try {

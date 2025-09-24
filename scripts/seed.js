@@ -5,7 +5,7 @@ import bcrypt from "bcryptjs";
 const postgres = prismaPostgres;
 const mongo = prismaMongo;
 
-async function main() {
+export async function seed() {
   console.log("🌱 Starting database seed...");
 
   // --- Create default domains in Postgres ---
@@ -95,8 +95,8 @@ async function main() {
             <img src="https://png.pngtree.com/png-vector/20210604/ourmid/pngtree-gray-network-placeholder-png-image_3416659.jpg"
                  alt="placeholder" style="max-width:100%; height:auto;" />
           `,
-          domainId: String(domain.id),      // force string
-          authorId: String(superadmin.id),  // force string
+          domainId: String(domain.id),
+          authorId: String(superadmin.id),
         },
       });
       console.log(`✅ Sample document "testdoc-${domain.name}" created for domain ${domain.name}`);
@@ -106,14 +106,8 @@ async function main() {
   }
 
   console.log("🎉 Database seeding completed!");
+  
+  // disconnect clients to avoid open handles
+  await postgres.$disconnect();
+  await mongo.$disconnect();
 }
-
-main()
-  .catch((e) => {
-    console.error("❌ Seeding error:", e);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await postgres.$disconnect();
-    await mongo.$disconnect();
-  });
