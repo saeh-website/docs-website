@@ -1,6 +1,8 @@
-import { NextResponse } from "next/server";
+// src/app/api/seed/route.js
 import { seed } from "../../../../scripts/seed";
+import { NextResponse } from "next/server";
 
+// Allow POST trigger (via curl) and GET trigger (via browser)
 export async function POST() {
   try {
     await seed();
@@ -9,4 +11,8 @@ export async function POST() {
     console.error("❌ Seeding error:", err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
+}
+
+export async function GET() {
+  return POST(); // reuse the POST handler
 }
