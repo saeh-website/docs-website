@@ -64,6 +64,7 @@ export const authOptions = {
       if (trigger === "update" && session) {
         token.currentDomain = session.user.currentDomain
         token.requiresDomainSelection = session.user.requiresDomainSelection
+        token.role = session.user.role || null
       }
 
       if (user) {
