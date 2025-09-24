@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import axios from 'axios'
 import { Add } from '@mui/icons-material'
-import Editor from '@/components/Editor' // import your Editor component
+import Editor from '@/components/Editor'
 
 export default function DocsPage() {
   const { data: session } = useSession()
@@ -62,20 +62,20 @@ export default function DocsPage() {
   }
 
   return (
-    <div className="p-6">
-      <h1 className="text-3xl font-bold mb-6 text-center">المستندات</h1>
-
-      {/* Add Doc Button */}
+    <div className="p-6 relative">
+      {/* Add Doc Button top-left */}
       {['superadmin', 'doc_admin', 'site_admin'].includes(userRole) && (
-        <div className="flex justify-center mb-4">
+        <div className="absolute top-24 left-6 z-10">
           <button
             onClick={handleAddClick}
             className="flex items-center bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
           >
-            <Add className="mr-2" /> إضافة مستند
+            <Add className="ml-2" /> إضافة مستند
           </button>
         </div>
       )}
+
+      <h1 className="text-3xl font-bold mb-6 text-center">المستندات</h1>
 
       {/* Domain Selector */}
       <div className="flex justify-center mb-6">
@@ -84,6 +84,7 @@ export default function DocsPage() {
           onChange={handleDomainChange}
           className="border px-2 py-1 rounded"
         >
+          <option value="">اختر مجال</option>
           {domains.map((d) => (
             <option key={d.domainId} value={d.domainId}>
               {d.domainName}
@@ -103,9 +104,9 @@ export default function DocsPage() {
         ))}
       </div>
 
-      {/* Add Doc Form Modal */}
+      {/* Add Doc Modal */}
       {showForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex justify-center items-start pt-24">
           <div className="bg-white p-6 rounded w-11/12 max-w-3xl space-y-4 relative">
             <h2 className="text-xl font-bold mb-2">إضافة مستند جديد</h2>
 
@@ -115,6 +116,10 @@ export default function DocsPage() {
               domains={domains}
               currentUserRole={userRole}
               currentUserDomains={user.userDomains}
+              title={title}
+              setTitle={setTitle}
+              domainId={domainId}
+              setDomainId={setDomainId}
             />
 
             <div className="flex justify-end space-x-2 mt-4">

@@ -1,8 +1,7 @@
 'use client';
 import dynamic from 'next/dynamic';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
-// Dynamically import ReactQuill to avoid SSR issues
 const ReactQuill = dynamic(() => import('react-quill'), { 
   ssr: false,
   loading: () => <div>Loading editor...</div>
@@ -10,15 +9,27 @@ const ReactQuill = dynamic(() => import('react-quill'), {
 
 import 'react-quill/dist/quill.snow.css';
 
-export default function Editor({ value, onChange, domains, currentUserRole, currentUserDomains }) {
-  const [content, setContent] = useState(value || '');
+export default function Editor({
+  value,
+  onChange,
+  domains,
+  currentUserRole,
+  currentUserDomains,
+  title,
+  setTitle,
+  domainId,
+  setDomainId,
+}) {
+  const [content, setContent] = useState(value || '')
+
+  useEffect(() => {
+    setContent(value || '')
+  }, [value])
 
   const handleContentChange = (newContent) => {
-    setContent(newContent);
-    if (onChange) {
-      onChange(newContent);
-    }
-  };
+    setContent(newContent)
+    if (onChange) onChange(newContent)
+  }
 
   const modules = {
     toolbar: [
@@ -28,40 +39,37 @@ export default function Editor({ value, onChange, domains, currentUserRole, curr
       ['link', 'image'],
       ['clean']
     ],
-  };
+  }
 
   const formats = [
     'header', 'font', 'list', 'bullet',
     'bold', 'italic', 'underline', 'link', 'image'
-  ];
+  ]
 
-  // Filter domains based on user role
-  const availableDomains = domains.filter(domain => {
-    if (currentUserRole === 'superadmin' || currentUserRole === 'doc_admin') {
-      return true;
-    }
+  // Filter domains based on role
+  const availableDomains = domains.filter(d => {
+    if (['superadmin', 'doc_admin'].includes(currentUserRole)) return true
     if (currentUserRole === 'site_admin') {
-      return currentUserDomains.some(ud => 
-        ud.domainId === domain.id && ud.userRole === 'site_admin'
-      );
+      return currentUserDomains.some(ud => ud.domainId === d.domainId && ud.userRole === 'site_admin')
     }
-    return false;
-  });
+    return false
+  })
 
   return (
     <div style={{ direction: 'rtl' }}>
       <div className="form-group">
         <label>المجال:</label>
-        <select 
-          name="domainId" 
+        <select
+          name="domainId"
           className="form-control"
           required
-          disabled={availableDomains.length === 0}
+          value={domainId}
+          onChange={(e) => setDomainId(e.target.value)}
         >
           <option value="">اختر مجال</option>
-          {availableDomains.map(domain => (
-            <option key={domain.id} value={domain.id}>
-              {domain.name}
+          {availableDomains.map(d => (
+            <option key={d.domainId} value={d.domainId}>
+              {d.domainName}
             </option>
           ))}
         </select>
@@ -78,6 +86,8 @@ export default function Editor({ value, onChange, domains, currentUserRole, curr
           className="form-control"
           placeholder="أدخل عنوان المستند"
           required
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
         />
       </div>
 
@@ -89,14 +99,9 @@ export default function Editor({ value, onChange, domains, currentUserRole, curr
           modules={modules}
           formats={formats}
           theme="snow"
-          style={{ 
-            direction: 'rtl',
-            textAlign: 'right'
-          }}
+          style={{ direction: 'rtl', textAlign: 'right', minHeight: '200px' }}
         />
       </div>
-
-      <input type="hidden" name="content" value={content} />
     </div>
-  );
+  )
 }
