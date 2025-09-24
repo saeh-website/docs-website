@@ -8,7 +8,7 @@
       "setup": "node scripts/setup.js",
       "check": "node scripts/check-setup.js",
       "seed": "node scripts/seed.js",
-      "postinstall": "npm run db:generate",
+      "postinstall": "npm run db:generate && ",
       "db:push:postgres": "npx prisma db push --schema=./prisma/schema.postgres.prisma",
       "db:push:mongo": "npx prisma db push --schema=./prisma/schema.mongo.prisma",
       "db:generate": "npx prisma generate --schema=./prisma/schema.postgres.prisma && npx prisma generate --schema=./prisma/schema.mongo.prisma"
@@ -17,7 +17,7 @@
       "@emotion/react": "^11.14.0",
       "@emotion/styled": "^11.14.1",
       "@mui/icons-material": "^5.15.0",
-      "@prisma/client": "^5.6.0",
+      "@prisma/client-postgres": "^5.6.0",
       "bcryptjs": "^2.4.3",
       "multer": "^1.4.5-lts.1",
       "next": "^14.0.0",

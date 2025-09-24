@@ -1,18 +1,13 @@
-import { PrismaClient } from "@prisma/client-mongo"; // Use the standard Prisma client
+import { PrismaClient } from "../generated/mongo";
 
 let prismaMongo;
 
-if (!global.prismaMongo) {
-  prismaMongo = new PrismaClient({
-    datasources: {
-      db: {
-        url: process.env.MONGODB_URL, // Must be set in Vercel environment variables
-      },
-    },
-    log: ["query", "error", "warn"], // Optional, helpful for debugging
-  });
-  global.prismaMongo = prismaMongo;
+if (process.env.NODE_ENV === "production") {
+  prismaMongo = new PrismaClient();
 } else {
+  if (!global.prismaMongo) {
+    global.prismaMongo = new PrismaClient();
+  }
   prismaMongo = global.prismaMongo;
 }
 
