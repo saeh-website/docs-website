@@ -1,10 +1,11 @@
 'use client';
+
 import dynamic from 'next/dynamic';
 import { useState, useEffect } from 'react';
 
-const ReactQuill = dynamic(() => import('react-quill'), { 
+const ReactQuill = dynamic(() => import('react-quill'), {
   ssr: false,
-  loading: () => <div>Loading editor...</div>
+  loading: () => <div>Loading editor...</div>,
 });
 
 import 'react-quill/dist/quill.snow.css';
@@ -20,43 +21,52 @@ export default function Editor({
   domainId,
   setDomainId,
 }) {
-  const [content, setContent] = useState(value || '')
+  const [content, setContent] = useState(value || '');
 
   useEffect(() => {
-    setContent(value || '')
-  }, [value])
+    setContent(value || '');
+  }, [value]);
 
   const handleContentChange = (newContent) => {
-    setContent(newContent)
-    if (onChange) onChange(newContent)
-  }
+    setContent(newContent);
+    onChange?.(newContent);
+  };
 
   const modules = {
     toolbar: [
-      [{ 'header': '1'}, {'header': '2'}, { 'font': [] }],
-      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+      [{ header: '1' }, { header: '2' }, { font: [] }],
+      [{ list: 'ordered' }, { list: 'bullet' }],
       ['bold', 'italic', 'underline'],
       ['link', 'image'],
-      ['clean']
+      ['clean'],
     ],
-  }
+  };
 
   const formats = [
-    'header', 'font', 'list', 'bullet',
-    'bold', 'italic', 'underline', 'link', 'image'
-  ]
+    'header',
+    'font',
+    'list',
+    'bullet',
+    'bold',
+    'italic',
+    'underline',
+    'link',
+    'image',
+  ];
 
-  // Filter domains based on role
-  const availableDomains = domains.filter(d => {
-    if (['superadmin', 'doc_admin'].includes(currentUserRole)) return true
+  const availableDomains = domains.filter((d) => {
+    if (['superadmin', 'doc_admin'].includes(currentUserRole)) return true;
     if (currentUserRole === 'site_admin') {
-      return currentUserDomains.some(ud => ud.domainId === d.domainId && ud.userRole === 'site_admin')
+      return currentUserDomains.some(
+        (ud) => ud.domainId === d.domainId && ud.userRole === 'site_admin'
+      );
     }
-    return false
-  })
+    return false;
+  });
 
   return (
     <div style={{ direction: 'rtl' }}>
+      {/* Domain Select */}
       <div className="form-group">
         <label>المجال:</label>
         <select
@@ -67,17 +77,18 @@ export default function Editor({
           onChange={(e) => setDomainId(e.target.value)}
         >
           <option value="">اختر مجال</option>
-          {availableDomains.map(d => (
+          {availableDomains.map((d) => (
             <option key={d.domainId} value={d.domainId}>
               {d.domainName}
             </option>
           ))}
         </select>
         {availableDomains.length === 0 && (
-          <small style={{ color: '#dc3545' }}>لا توجد مجالات متاحة للإضافة</small>
+          <small className="text-red-600">لا توجد مجالات متاحة للإضافة</small>
         )}
       </div>
 
+      {/* Title Input */}
       <div className="form-group">
         <label>العنوان:</label>
         <input
@@ -91,6 +102,7 @@ export default function Editor({
         />
       </div>
 
+      {/* Content Editor */}
       <div className="form-group">
         <label>المحتوى:</label>
         <ReactQuill
@@ -103,5 +115,5 @@ export default function Editor({
         />
       </div>
     </div>
-  )
+  );
 }

@@ -1,75 +1,77 @@
-'use client'
-import { useState, useEffect } from 'react'
-import { useSession } from 'next-auth/react'
-import axios from 'axios'
-import { Add } from '@mui/icons-material'
-import Editor from '@/components/Editor'
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
+import axios from 'axios';
+import { Add } from '@mui/icons-material';
+import Editor from '@/components/Editor';
 
 export default function DocsPage() {
-  const { data: session } = useSession()
-  const [showForm, setShowForm] = useState(false)
-  const [title, setTitle] = useState('')
-  const [domainId, setDomainId] = useState('')
-  const [content, setContent] = useState('')
-  const [domains, setDomains] = useState([])
-  const [docs, setDocs] = useState([])
+  const { data: session } = useSession();
+  const [showForm, setShowForm] = useState(false);
+  const [title, setTitle] = useState('');
+  const [domainId, setDomainId] = useState('');
+  const [content, setContent] = useState('');
+  const [domains, setDomains] = useState([]);
+  const [docs, setDocs] = useState([]);
 
-  const user = session?.user
-  const userRole = user?.currentDomain?.userRole?.toLowerCase()
+  const user = session?.user;
+  const userRole = user?.currentDomain?.userRole?.toLowerCase();
 
   useEffect(() => {
     if (user) {
-      setDomains(user.userDomains || [])
-      setDomainId(user.currentDomain?.domainId || '')
-      fetchDocs(user.currentDomain?.domainId)
+      setDomains(user.userDomains || []);
+      setDomainId(user.currentDomain?.domainId || '');
+      fetchDocs(user.currentDomain?.domainId);
     }
-  }, [user])
+  }, [user]);
 
   const fetchDocs = async (domainId) => {
-    if (!domainId) return
+    if (!domainId) return;
     try {
-      const res = await axios.get(`/api/docs?domainId=${domainId}`)
-      setDocs(res.data || [])
+      const res = await axios.get(`/api/docs?domainId=${domainId}`);
+      setDocs(res.data || []);
     } catch (err) {
-      console.error('Fetch docs error:', err)
+      console.error('Fetch docs error:', err);
     }
-  }
+  };
 
-  const handleAddClick = () => setShowForm(true)
+  const handleAddClick = () => setShowForm(true);
+
   const handleClose = () => {
-    setShowForm(false)
-    setTitle('')
-    setContent('')
-    setDomainId(user.currentDomain?.domainId || '')
-  }
+    setShowForm(false);
+    setTitle('');
+    setContent('');
+    setDomainId(user.currentDomain?.domainId || '');
+  };
 
   const handleSave = async () => {
-    if (!title || !domainId || !content) return alert('الرجاء تعبئة جميع الحقول')
-    try {
-      await axios.post('/api/docs/add', { title, domainId, content })
-      fetchDocs(domainId)
-      handleClose()
-    } catch (err) {
-      console.error('Save error:', err)
-      alert('حدث خطأ أثناء حفظ المستند')
+    if (!title || !domainId || !content) {
+      return alert('الرجاء تعبئة جميع الحقول');
     }
-  }
+
+    try {
+      await axios.post('/api/docs/add', { title, domainId, content });
+      fetchDocs(domainId);
+      handleClose();
+    } catch (err) {
+      console.error('Save error:', err);
+      alert('حدث خطأ أثناء حفظ المستند');
+    }
+  };
 
   const handleDomainChange = (e) => {
-    const selectedId = e.target.value
-    setDomainId(selectedId)
-    fetchDocs(selectedId)
-  }
+    const selectedId = e.target.value;
+    setDomainId(selectedId);
+    fetchDocs(selectedId);
+  };
 
   return (
     <div className="p-6 relative">
-      {/* Add Doc Button top-left */}
+      {/* Add Doc Button */}
       {['superadmin', 'doc_admin', 'site_admin'].includes(userRole) && (
         <div className="absolute top-24 left-6 z-10">
-          <button
-            onClick={handleAddClick}
-            className="btn flex items-center"
-          >
+          <button onClick={handleAddClick} className="btn flex items-center">
             <Add className="ml-2" /> إضافة مستند
           </button>
         </div>
@@ -95,7 +97,9 @@ export default function DocsPage() {
 
       {/* Docs List */}
       <div className="space-y-4">
-        {docs.length === 0 && <p className="text-center text-gray-500">لا توجد مستندات لهذا النطاق</p>}
+        {docs.length === 0 && (
+          <p className="text-center text-gray-500">لا توجد مستندات لهذا النطاق</p>
+        )}
         {docs.map((doc) => (
           <div key={doc.id} className="border p-4 rounded shadow">
             <h2 className="font-bold text-lg mb-2">{doc.title}</h2>
@@ -142,5 +146,5 @@ export default function DocsPage() {
         </div>
       )}
     </div>
-  )
+  );
 }
