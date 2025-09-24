@@ -44,16 +44,21 @@ export default function DocsPage() {
   }
 
   const handleSave = async () => {
-    if (!title || !domainId || !content) return alert('الرجاء تعبئة جميع الحقول')
-    try {
-      await axios.post('/api/docs/add', { title, domainId, content })
-      fetchDocs(domainId)
-      handleClose()
-    } catch (err) {
-      console.error(err)
-      alert('حدث خطأ أثناء حفظ المستند')
-    }
+  console.log('Saving doc', { title, domainId, content });
+  if (!title || !domainId || !content) {
+    return alert('الرجاء تعبئة جميع الحقول');
   }
+  try {
+    await axios.post('/api/docs/add', { title, domainId, content });
+    fetchDocs(domainId);
+    handleClose();
+  } catch (err) {
+    console.error('Save error:', err);
+    alert('حدث خطأ أثناء حفظ المستند');
+  }
+}
+
+  
 
   const handleDomainChange = (e) => {
     const selectedId = e.target.value
