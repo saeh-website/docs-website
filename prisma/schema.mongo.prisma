@@ -9,7 +9,7 @@ datasource db {
 }
 
 model Doc {
-  id        String   @id    @map("_id") @db.ObjectId @default(dbgenerated()) 
+  id String @id @map("_id") @db.ObjectId @default(auto())
   title     String
   content   String
   domainId  String
