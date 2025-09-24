@@ -1,5 +1,5 @@
 import { getServerSession } from "next-auth";
-import { authOptions } from '../../auth/[...nextauth]/route';
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prismaMongo } from "@/lib/prismaMongo";
 import { NextResponse } from "next/server";
 
@@ -13,7 +13,8 @@ export async function POST(request) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     const { title, content, domainId } = await request.json();
-    if (!title || !content) return NextResponse.json({ error: "Title and content required" }, { status: 400 });
+    if (!title || !content)
+      return NextResponse.json({ error: "Title and content required" }, { status: 400 });
 
     if (role === "site_admin") {
       const hasAccess = session.user.userDomains?.some(

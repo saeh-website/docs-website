@@ -12,9 +12,8 @@ export const authOptions = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.username || !credentials?.password) {
+        if (!credentials?.username || !credentials?.password)
           throw new Error("Please enter your username and password");
-        }
 
         const user = await prismaPostgres.user.findUnique({
           where: { username: credentials.username },
@@ -50,17 +49,14 @@ export const authOptions = {
         token.username = user.username;
         token.profilePicture = user.profilePicture;
         token.userDomains = user.userDomains || [];
-
         let currentDomain =
           user.userDomains.find((d) => d.isDefault) || user.userDomains[0] || null;
-
         token.currentDomain = currentDomain;
         token.role = currentDomain?.userRole || null;
         token.requiresDomainSelection = user.userDomains.length > 1;
       }
       return token;
     },
-
     async session({ session, token }) {
       if (token) {
         session.user = {
