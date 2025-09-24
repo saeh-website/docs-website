@@ -9,6 +9,7 @@ export default function Sidebar({ isOpen, toggle }) {
   console.log("Sidebar component is rendering"); // 👈 this must appear
 
   const { data: session, status } = useSession();
+  console.log("CLIENT SESSION OBJECT:", session);
   const router = useRouter();
 
   if (status === "loading") {

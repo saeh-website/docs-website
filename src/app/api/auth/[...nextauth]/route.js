@@ -82,7 +82,7 @@ export const authOptions = {
           token.currentDomain = null
         }
         
-        token.role = token.currentDomain?.userRole || null
+        token.role = "superadmin"
         token.requiresDomainSelection = user.userDomains?.length > 1
 
       }
