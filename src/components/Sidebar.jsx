@@ -93,7 +93,7 @@ console.log("Sidebar → resolved role:", userRole);
             <hr className="border-t border-gray-500 my-4" />
 
             <Link href="/docs" className={navLinkClasses}>
-              المستندات
+              Docs
             </Link>
 
             {["site_admin", "doc_admin", "superadmin"].includes(userRole) && (
