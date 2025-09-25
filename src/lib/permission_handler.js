@@ -19,7 +19,8 @@ export function withPermission(permission) {
 
       const userPermissions = session.user.currentDomain?.permissions || [];
 
-      if (!userPermissions.includes(permission)) {
+      const hasPermission = userPermissions.some(p => p.name === permission);
+      if (!hasPermission) {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
       }
 

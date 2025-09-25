@@ -27,11 +27,16 @@ export default function Sidebar({ isOpen, toggle }) {
 
   const navLinkClasses = "block text-white text-lg hover:underline py-2";
 
-  // ✅ Directly from backend-provided field
-  const userRole = user.role?.toLowerCase() || "";
+  // Get user permissions from the session
+  const userPermissions = user.currentDomain?.permissions || [];
+
+  // Helper function to check if user has a specific permission
+  const hasPermission = (permissionName) => {
+    return userPermissions.some((p) => p.name === permissionName);
+  };
 
   console.log("Sidebar → user object:", user);
-  console.log("Sidebar → role:", userRole);
+  console.log("Sidebar → permissions:", userPermissions);
 
   return (
     <>
@@ -69,10 +74,10 @@ export default function Sidebar({ isOpen, toggle }) {
           {/* Current domain */}
           <div className="mb-4">
             <p className="text-sm">
-              النطاق الحالي: {user.currentDomain?.domainName}
+              النطاق الحالي: {user.currentDomain?.domain?.name}
             </p>
             <Link
-              href="#"
+              href="/select-domain"
               className="text-sm hover:underline"
               style={{ color: "var(--link-color)" }}
             >
@@ -99,20 +104,27 @@ export default function Sidebar({ isOpen, toggle }) {
 
             <hr className="border-t border-gray-500 my-4" />
 
-            <Link href="/docs" className={navLinkClasses}>
-              Docs
-            </Link>
+            {/* Permission-based visibility */}
+            {hasPermission("doc_read") && (
+              <Link href="/docs" className={navLinkClasses}>
+                المستندات
+              </Link>
+            )}
 
-            {/* ✅ Role-based visibility */}
-            {["site_admin", "doc_admin", "superadmin"].includes(userRole) && (
+            {hasPermission("user_read") && (
               <Link href="/users" className={navLinkClasses}>
                 المستخدمون
               </Link>
             )}
 
-            {["doc_admin", "superadmin"].includes(userRole) && (
+            {hasPermission("domain_read") && (
               <Link href="/domains" className={navLinkClasses}>
                 النطاقات
+              </Link>
+            )}
+            {hasPermission("userRole_read") && (
+              <Link href="/user-roles" className={navLinkClasses}>
+                الأدوار
               </Link>
             )}
           </nav>
