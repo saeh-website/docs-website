@@ -20,7 +20,7 @@ model User {
   userDomains    UserDomain[] @relation("UserToUserDomains")
 
   currentDomain  UserDomain?  @relation("UserToCurrentDomain", fields: [currentDomainId], references: [id])
-  currentDomainId String?
+  currentDomainId String?      @unique
   
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
@@ -49,6 +49,8 @@ model UserDomain {
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  currentUser User? @relation("UserToCurrentDomain")
 
   @@unique([userId, domainId]) // a user can have one role per domain
 }

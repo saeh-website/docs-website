@@ -9,6 +9,7 @@ const mongo = prismaMongo;
 const pgUser = postgres.User ?? postgres.user;
 const pgDomain = postgres.Domain ?? postgres.domain;
 const pgUserDomain = postgres.UserDomain ?? postgres.userDomain;
+const pgUserRole = postgres.UserRole ?? postgres.userRole;
 
 const mgDoc = mongo.Doc ?? mongo.doc;
 
@@ -18,6 +19,30 @@ const rolesHierarchy = ["editor", "site_admin", "doc_admin", "superadmin"];
 
 export async function seed() {
   console.log("🌱 Starting database seed...");
+
+  // --- Postgres: create user roles ---
+  const rolesData = [
+    { name: "editor", description: "Can edit documents." },
+    { name: "site_admin", description: "Can manage site settings." },
+    { name: "doc_admin", description: "Can manage documents." },
+    { name: "superadmin", description: "Has all permissions." },
+  ];
+
+  const roles = await Promise.all(
+    rolesData.map((role) =>
+      pgUserRole.upsert({
+        where: { name: role.name },
+        update: {},
+        create: role,
+      })
+    )
+  );
+  const rolesMap = roles.reduce((acc, role) => {
+    acc[role.name] = role;
+    return acc;
+  }, {});
+  console.log("✅ User roles created/verified:", roles.map(r => r.name));
+
 
   // --- Postgres: create domains ---
   const domainNames = ["option1", "option2", "option3"];
@@ -70,7 +95,7 @@ export async function seed() {
         create: {
           userId: user.id,
           domainId: domain.id,
-          userRole, // role bound to domain
+          userRoleId: rolesMap[userRole].id, // role bound to domain
         },
       });
     }
