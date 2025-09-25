@@ -67,7 +67,7 @@ export async function seed() {
   });
 
   await pgUser.upsert({
-    where: { username: "siteadmin1" },
+    where: { username: "siteadmin2" },
     update: {},
     create: {
       username: "siteadmin2",
