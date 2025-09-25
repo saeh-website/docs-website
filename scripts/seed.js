@@ -66,6 +66,23 @@ export async function seed() {
     },
   });
 
+  await pgUser.upsert({
+    where: { username: "siteadmin1" },
+    update: {},
+    create: {
+      username: "siteadmin2",
+      password: await hash("siteadmin123"),
+      profilePicture: "/images/default-avatar.png",
+      userDomains: {
+        create: {
+          domainId: domains[0].id,
+          userRole: "site_admin",
+          isDefault: true,
+        },
+      },
+    },
+  });
+
   // --- Editor ---
   await pgUser.upsert({
     where: { username: "editor1" },
