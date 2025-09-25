@@ -11,15 +11,14 @@ datasource db {
 }
 
 model Doc {
-  id        String   @id @default(cuid())
+  id        String   @id @map("_id") @default(auto())  // map to MongoDB _id
   title     String
   content   String
   domainId  String
   authorId  String
+  deleted   Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  deleted   Boolean  @default(false)
-  deletedAt DateTime?
 
   @@index([domainId])
 }
