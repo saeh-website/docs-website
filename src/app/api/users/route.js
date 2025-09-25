@@ -1,54 +1,26 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../auth/[...nextauth]/route';
-import { prismaPostgres } from '@/lib/prismaPostgres';
+import { prismaPostgres } from '../../../lib/prismaPostgres';
 import bcrypt from 'bcryptjs';
+import { withPermission } from '../../../lib/permission_handler';
+import { NextResponse } from 'next/server';
 
-export async function GET(request) {
-  const session = await getServerSession(authOptions);
-
-  if (!session) {
-    return new Response('Unauthorized', { status: 401 });
-  }
-
-  // Only site_admin, doc_admin, and superadmin can access users
-  const allowedRoles = ['site_admin', 'doc_admin', 'superadmin'];
-  if (!allowedRoles.includes(session.user.currentDomain.userRole)) {
-    return new Response('Forbidden', { status: 403 });
-  }
-
+async function getUsersHandler(request, { session }) {
   try {
+    const readPermission = session.user.currentDomain.permissions.find(p => p.name === 'user_read');
+    const canReadAllUsers = readPermission?.scopeAllDomains;
+
     let users;
 
-    if (session.user.currentDomain.userRole === 'superadmin') {
-      // Superadmin can see all users
+    if (canReadAllUsers) {
+      // If user has global 'user_read', fetch all users
       users = await prismaPostgres.user.findMany({
-        include: {
-          userDomains: {
-            include: {
-              domain: true,
-            },
-          },
-        },
         orderBy: { createdAt: 'desc' },
+        include: { userDomains: { include: { domain: true, userRole: true } } },
       });
-    } else if (session.user.currentDomain.userRole === 'doc_admin') {
-      // Doc admin can see all users but only manage within their permissions
-      users = await prismaPostgres.user.findMany({
-        include: {
-          userDomains: {
-            include: {
-              domain: true,
-            },
-          },
-        },
-        orderBy: { createdAt: 'desc' },
-      });
-    } else if (session.user.currentDomain.userRole === 'site_admin') {
-      // Site admin can only see users in their domains
-      const userDomainIds = session.user.userDomains
-        .filter(ud => ud.userRole === 'site_admin')
-        .map(ud => ud.domainId);
-
+    } else {
+      // Otherwise, fetch only users within the domains this user is part of
+      const userDomainIds = session.user.userDomains.map(ud => ud.domain.id);
       users = await prismaPostgres.user.findMany({
         where: {
           userDomains: {
@@ -57,74 +29,49 @@ export async function GET(request) {
             },
           },
         },
-        include: {
-          userDomains: {
-            include: {
-              domain: true,
-            },
-          },
-        },
         orderBy: { createdAt: 'desc' },
+        include: { userDomains: { include: { domain: true, userRole: true } } },
       });
     }
 
-    return Response.json(users);
+    // Remove password from all users before sending
+    const usersWithoutPasswords = users.map(u => {
+      const { password, ...user } = u;
+      return user;
+    });
+
+    return NextResponse.json(usersWithoutPasswords);
   } catch (error) {
     console.error('Error fetching users:', error);
-    return new Response('Error fetching users', { status: 500 });
+    return NextResponse.json({ error: 'Error fetching users' }, { status: 500 });
   }
 }
 
-export async function POST(request) {
-  const session = await getServerSession(authOptions);
+export const GET = withPermission('user_read')(getUsersHandler);
 
-  if (!session) {
-    return new Response('Unauthorized', { status: 401 });
-  }
-
-  const allowedRoles = ['site_admin', 'doc_admin', 'superadmin'];
-  if (!allowedRoles.includes(session.user.currentDomain.userRole)) {
-    return new Response('Forbidden', { status: 403 });
-  }
-
+async function createUserHandler(request, { session }) {
   try {
     const { username, password, profilePicture, domains } = await request.json();
 
     if (!username || !password || !domains || domains.length === 0) {
-      return new Response('Username, password, and at least one domain are required', { status: 400 });
+      return NextResponse.json({ error: 'Username, password, and at least one domain are required' }, { status: 400 });
     }
 
-    // Check if username already exists
     const existingUser = await prismaPostgres.user.findUnique({
       where: { username },
     });
 
     if (existingUser) {
-      return new Response('Username already exists', { status: 400 });
+      return NextResponse.json({ error: 'Username already exists' }, { status: 400 });
     }
 
-    // Validate domain access based on user role
-    for (const domain of domains) {
-      if (session.user.currentDomain.userRole === 'site_admin') {
-        // Site admin can only add users to domains where they are site_admin
-        const hasAccess = session.user.userDomains.some(
-          ud => ud.domainId === domain.domainId && ud.userRole === 'site_admin'
-        );
-        if (!hasAccess) {
-          return new Response(`Forbidden: No access to domain ${domain.domainId}`, { status: 403 });
-        }
-      }
-
-      // Check role hierarchy
-      const currentUserRole = session.user.currentDomain.userRole;
-      const targetRole = domain.userRole;
-
-      const roleHierarchy = ['editor', 'site_admin', 'doc_admin', 'superadmin'];
-      const currentUserIndex = roleHierarchy.indexOf(currentUserRole);
-      const targetRoleIndex = roleHierarchy.indexOf(targetRole);
-
-      if (targetRoleIndex >= currentUserIndex) {
-        return new Response(`Cannot assign role ${targetRole} - insufficient permissions`, { status: 403 });
+    // Permission check: can the current user assign users to these domains?
+    const createPermission = session.user.currentDomain.permissions.find(p => p.name === 'user_create');
+    if (!createPermission.scopeAllDomains) {
+      const adminDomainIds = new Set(session.user.userDomains.map(ud => ud.domain.id));
+      const targetDomainIds = domains.map(d => d.domainId);
+      if (!targetDomainIds.every(id => adminDomainIds.has(id))) {
+        return NextResponse.json({ error: 'You can only assign users to domains you are a part of.' }, { status: 403 });
       }
     }
 
@@ -138,7 +85,7 @@ export async function POST(request) {
         userDomains: {
           create: domains.map(domain => ({
             domainId: domain.domainId,
-            userRole: domain.userRole,
+            userRoleId: domain.userRoleId, // Assuming client sends userRoleId
           })),
         },
       },
@@ -146,87 +93,51 @@ export async function POST(request) {
         userDomains: {
           include: {
             domain: true,
+            userRole: true
           },
         },
       },
     });
 
-    // Remove password from response
     const { password: _, ...userWithoutPassword } = user;
 
-    return Response.json(userWithoutPassword);
+    return NextResponse.json(userWithoutPassword);
   } catch (error) {
     console.error('Error creating user:', error);
-    return new Response('Error creating user', { status: 500 });
+    return NextResponse.json({ error: 'Error creating user' }, { status: 500 });
   }
 }
 
-export async function DELETE(request) {
-  const session = await getServerSession(authOptions);
+export const POST = withPermission('user_create')(createUserHandler);
 
-  if (!session) {
-    return new Response('Unauthorized', { status: 401 });
-  }
-
-  const allowedRoles = ['site_admin', 'doc_admin', 'superadmin'];
-  if (!allowedRoles.includes(session.user.currentDomain.userRole)) {
-    return new Response('Forbidden', { status: 403 });
-  }
-
+async function deleteUserHandler(request, { session }) {
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 
     if (!id) {
-      return new Response('User ID is required', { status: 400 });
+      return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
+    }
+    if (id === session.user.id) {
+      return NextResponse.json({ error: 'Cannot delete your own account' }, { status: 400 });
     }
 
-    // Check if user exists
     const userToDelete = await prismaPostgres.user.findUnique({
       where: { id },
-      include: {
-        userDomains: {
-          include: {
-            domain: true,
-          },
-        },
-      },
+      include: { userDomains: true },
     });
 
     if (!userToDelete) {
-      return new Response('User not found', { status: 404 });
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Prevent deleting yourself
-    if (userToDelete.id === session.user.id) {
-      return new Response('Cannot delete your own account', { status: 400 });
-    }
-
-    // Role hierarchy check - can't delete users with higher or equal roles
-    const currentUserRole = session.user.currentDomain.userRole;
-    const roleHierarchy = ['editor', 'site_admin', 'doc_admin', 'superadmin'];
-    const currentUserIndex = roleHierarchy.indexOf(currentUserRole);
-
-    const targetUserMaxRoleIndex = Math.max(
-      ...userToDelete.userDomains.map(ud => roleHierarchy.indexOf(ud.userRole))
-    );
-
-    if (targetUserMaxRoleIndex >= currentUserIndex) {
-      return new Response('Cannot delete user with equal or higher role', { status: 403 });
-    }
-
-    // If site_admin, can only delete users in their domains
-    if (currentUserRole === 'site_admin') {
-      const userDomainIds = session.user.userDomains
-        .filter(ud => ud.userRole === 'site_admin')
-        .map(ud => ud.domainId);
-
-      const hasPermission = userToDelete.userDomains.some(ud =>
-        userDomainIds.includes(ud.domainId)
-      );
-
-      if (!hasPermission) {
-        return new Response('Cannot delete user outside your domains', { status: 403 });
+    // Permission check: can the current user delete this user?
+    const deletePermission = session.user.currentDomain.permissions.find(p => p.name === 'user_delete');
+    if (!deletePermission.scopeAllDomains) {
+      const adminDomainIds = new Set(session.user.userDomains.map(ud => ud.domain.id));
+      const targetUserDomainIds = userToDelete.userDomains.map(ud => ud.domainId);
+      if (!targetUserDomainIds.some(id => adminDomainIds.has(id))) {
+        return NextResponse.json({ error: 'You can only delete users within your domains.' }, { status: 403 });
       }
     }
 
@@ -234,9 +145,11 @@ export async function DELETE(request) {
       where: { id },
     });
 
-    return new Response(null, { status: 204 });
+    return new NextResponse(null, { status: 204 });
   } catch (error) {
     console.error('Error deleting user:', error);
-    return new Response('Error deleting user', { status: 500 });
+    return NextResponse.json({ error: 'Error deleting user' }, { status: 500 });
   }
 }
+
+export const DELETE = withPermission('user_delete')(deleteUserHandler);

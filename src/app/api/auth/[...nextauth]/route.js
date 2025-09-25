@@ -17,7 +17,36 @@ export const authOptions = {
 
         const user = await prismaPostgres.user.findUnique({
           where: { username: credentials.username },
-          include: { userDomains: { include: { domain: true } } },
+          include: {
+            userDomains: {
+              include: {
+                domain: true,
+                userRole: {
+                  include: {
+                    rolePermissions: {
+                      include: {
+                        permission: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            currentDomain: {
+              include: {
+                domain: true,
+                userRole: {
+                  include: {
+                    rolePermissions: {
+                      include: {
+                        permission: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
         });
 
         if (!user || !user.password) throw new Error("Invalid credentials");
@@ -25,16 +54,13 @@ export const authOptions = {
         const isPasswordMatch = await bcrypt.compare(credentials.password, user.password);
         if (!isPasswordMatch) throw new Error("Invalid credentials");
 
+        // Return a processed user object for the JWT callback
         return {
           id: user.id,
           username: user.username,
           profilePicture: user.profilePicture,
-          userDomains: user.userDomains.map((ud) => ({
-            domainId: ud.domain.id,
-            domainName: ud.domain.name,
-            userRole: ud.userRole,
-            isDefault: ud.isDefault,
-          })),
+          userDomains: user.userDomains,
+          currentDomain: user.currentDomain,
         };
       },
     }),
@@ -48,12 +74,34 @@ export const authOptions = {
         token.id = user.id;
         token.username = user.username;
         token.profilePicture = user.profilePicture;
-        token.userDomains = user.userDomains || [];
-        let currentDomain =
-          user.userDomains.find((d) => d.isDefault) || user.userDomains[0] || null;
-        token.currentDomain = currentDomain;
-        token.role = currentDomain?.userRole || null;
-        token.requiresDomainSelection = user.userDomains.length > 1;
+
+        // Simplify userDomains for the token, removing detailed permissions
+        token.userDomains = user.userDomains.map((ud) => ({
+          id: ud.id,
+          domain: ud.domain,
+          roleName: ud.userRole.name,
+        }));
+
+        // Determine current domain and extract its permissions
+        const currentDomain = user.currentDomain || user.userDomains[0] || null;
+
+        if (currentDomain) {
+          const permissions = currentDomain.userRole.rolePermissions.map(
+            (rp) => ({
+              name: rp.permission.name,
+              scopeAllDomains: rp.scopeAllDomains,
+            })
+          );
+          token.currentDomain = {
+            id: currentDomain.id,
+            domain: currentDomain.domain,
+            roleName: currentDomain.userRole.name,
+            permissions: permissions,
+          };
+        } else {
+          token.currentDomain = user.userDomains[0];
+        }
+        token.requiresDomainSelection = !token.currentDomain;
       }
       return token;
     },
@@ -65,7 +113,6 @@ export const authOptions = {
           profilePicture: token.profilePicture,
           userDomains: token.userDomains,
           currentDomain: token.currentDomain,
-          role: token.role,
           requiresDomainSelection: token.requiresDomainSelection,
         };
       }

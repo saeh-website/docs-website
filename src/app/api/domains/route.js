@@ -1,19 +1,8 @@
-import { getServerSession } from 'next-auth';
-import { authOptions } from '../auth/[...nextauth]/route';
-import { prismaPostgres } from '@/lib/prismaPostgres';
+import { prismaPostgres } from '../../../lib/prismaPostgres';
+import { withPermission } from '../../../lib/permission_handler';
+import { NextResponse } from 'next/server';
 
-export async function GET(request) {
-  const session = await getServerSession(authOptions);
-
-  if (!session) {
-    return new Response('Unauthorized', { status: 401 });
-  }
-
-  // Only doc_admin and superadmin can access domains
-  if (!['doc_admin', 'superadmin'].includes(session.user.currentDomain.userRole)) {
-    return new Response('Forbidden', { status: 403 });
-  }
-
+async function getDomainsHandler(request, { session }) {
   try {
     const domains = await prismaPostgres.domain.findMany({
       orderBy: { createdAt: 'desc' },
@@ -26,65 +15,49 @@ export async function GET(request) {
       },
     });
 
-    return Response.json(domains);
+    return NextResponse.json(domains);
   } catch (error) {
     console.error('Error fetching domains:', error);
-    return new Response('Error fetching domains', { status: 500 });
+    return NextResponse.json({ error: 'Error fetching domains' }, { status: 500 });
   }
 }
 
-export async function POST(request) {
-  const session = await getServerSession(authOptions);
+export const GET = withPermission('domain_read')(getDomainsHandler);
 
-  if (!session) {
-    return new Response('Unauthorized', { status: 401 });
-  }
-
-  if (!['doc_admin', 'superadmin'].includes(session.user.currentDomain.userRole)) {
-    return new Response('Forbidden', { status: 403 });
-  }
-
+async function createDomainHandler(request, { session }) {
   try {
-    const { name } = await request.json();
+    const { name, description } = await request.json();
 
     if (!name) {
-      return new Response('Domain name is required', { status: 400 });
+      return NextResponse.json({ error: 'Domain name is required' }, { status: 400 });
     }
 
     const domain = await prismaPostgres.domain.create({
-      data: { name },
+      data: { name, description },
     });
 
-    return Response.json(domain);
+    return NextResponse.json(domain);
   } catch (error) {
     if (error.code === 'P2002') {
-      return new Response('Domain already exists', { status: 400 });
+      return NextResponse.json({ error: 'Domain already exists' }, { status: 400 });
     }
     console.error('Error creating domain:', error);
-    return new Response('Error creating domain', { status: 500 });
+    return NextResponse.json({ error: 'Error creating domain' }, { status: 500 });
   }
 }
 
-export async function DELETE(request) {
-  const session = await getServerSession(authOptions);
+export const POST = withPermission('domain_create')(createDomainHandler);
 
-  if (!session) {
-    return new Response('Unauthorized', { status: 401 });
-  }
-
-  if (!['doc_admin', 'superadmin'].includes(session.user.currentDomain.userRole)) {
-    return new Response('Forbidden', { status: 403 });
-  }
-
+async function deleteDomainHandler(request, { session }) {
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 
     if (!id) {
-      return new Response('Domain ID is required', { status: 400 });
+      return NextResponse.json({ error: 'Domain ID is required' }, { status: 400 });
     }
 
-    // Check if domain has users or docs
+    // Check if domain has users associated with it
     const domainWithRelations = await prismaPostgres.domain.findUnique({
       where: { id },
       include: {
@@ -97,16 +70,18 @@ export async function DELETE(request) {
     });
 
     if (domainWithRelations._count.userDomains > 0) {
-      return new Response('Cannot delete domain with existing users', { status: 400 });
+      return NextResponse.json({ error: 'Cannot delete domain with existing users' }, { status: 400 });
     }
 
     await prismaPostgres.domain.delete({
       where: { id },
     });
 
-    return new Response(null, { status: 204 });
+    return new NextResponse(null, { status: 204 });
   } catch (error) {
     console.error('Error deleting domain:', error);
-    return new Response('Error deleting domain', { status: 500 });
+    return NextResponse.json({ error: 'Error deleting domain' }, { status: 500 });
   }
 }
+
+export const DELETE = withPermission('domain_delete')(deleteDomainHandler);

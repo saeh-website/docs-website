@@ -1,49 +1,35 @@
 import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth/next'
-import { authOptions } from '@/app/api/auth/[...nextauth]/route'
-import { prismaPostgres } from '@/lib/prismaPostgres'
+import { prismaPostgres } from '../../../lib/prismaPostgres'
+import { withAuth } from '../../../lib/permission_handler';
 
-export async function POST(req) {
-  const session = await getServerSession(authOptions)
-
-  if (!session) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
-  const { domainId } = await req.json()
-  const userId = session.user.id
-
-  if (!domainId) {
-    return NextResponse.json({ error: 'Domain ID is required' }, { status: 400 })
-  }
-
+async function setDefaultDomainHandler(req, { session }) {
   try {
-    // Start a transaction to ensure atomicity
-    await prismaPostgres.$transaction(async (prisma) => {
-      // First, unset any existing default domain for the user
-      await prisma.userDomain.updateMany({
-        where: {
-          userId: userId,
-          isDefault: true,
-        },
-        data: {
-          isDefault: false,
-        },
-      })
+    const { domainId } = await req.json()
+    const userId = session.user.id
 
-      // Then, set the new default domain
-      await prisma.userDomain.update({
-        where: {
-          userId_domainId: {
-            userId: userId,
-            domainId: domainId,
-          },
+    if (!domainId) {
+      return NextResponse.json({ error: 'Domain ID is required' }, { status: 400 })
+    }
+
+    // Find the UserDomain entry for this user and the selected domain
+    const userDomain = await prismaPostgres.userDomain.findUnique({
+      where: {
+        userId_domainId: {
+          userId: userId,
+          domainId: domainId,
         },
-        data: {
-          isDefault: true,
-        },
-      })
-    })
+      },
+    });
+
+    if (!userDomain) {
+      return NextResponse.json({ error: 'User is not a member of this domain' }, { status: 403 });
+    }
+
+    // Set the user's currentDomainId to the ID of the found UserDomain entry
+    await prismaPostgres.user.update({
+      where: { id: userId },
+      data: { currentDomainId: userDomain.id },
+    });
 
     return NextResponse.json({ message: 'Default domain updated successfully' })
   } catch (error) {
@@ -51,3 +37,5 @@ export async function POST(req) {
     return NextResponse.json({ error: 'Failed to set default domain' }, { status: 500 })
   }
 }
+
+export const POST = withAuth(setDefaultDomainHandler);

@@ -1,33 +1,21 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { prismaMongo } from "@/lib/prismaMongo";
+import { prismaMongo } from "../../../lib/prismaMongo";
 import { NextResponse } from "next/server";
+import { withPermission } from "../../../lib/permission_handler";
 
-export async function POST(request) {
+async function createDocHandler(request, { session }) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const { title, content, domainIds, visibleToRoles } = await request.json();
 
-    const role = session.user.currentDomain?.userRole;
-    if (!["site_admin", "doc_admin", "superadmin"].includes(role))
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-
-    const { title, content, domainId } = await request.json();
-    if (!title || !content)
-      return NextResponse.json({ error: "Title and content required" }, { status: 400 });
-
-    if (role === "site_admin") {
-      const hasAccess = session.user.userDomains?.some(
-        (ud) => ud.domainId === domainId && ud.userRole === "site_admin"
-      );
-      if (!hasAccess) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (!title || !content || !domainIds || !visibleToRoles) {
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
     const doc = await prismaMongo.doc.create({
       data: {
         title,
         content,
-        domainId: domainId || session.user.currentDomain.domainId,
+        domainIds,
+        visibleToRoles,
         authorId: session.user.id,
       },
     });
@@ -38,3 +26,5 @@ export async function POST(request) {
     return NextResponse.json({ error: err.message || "Error creating doc" }, { status: 500 });
   }
 }
+
+export const POST = withPermission('doc_create')(createDocHandler);

@@ -1,19 +1,13 @@
-import { getServerSession } from 'next-auth';
-import { authOptions } from '../auth/[...nextauth]/route';
-import { prismaPostgres } from '@/lib/prismaPostgres';
+import { prismaPostgres } from '../../../lib/prismaPostgres';
+import { withAuth } from '../../../lib/permission_handler';
+import { NextResponse } from 'next/server';
 
-export async function PUT(request) {
-  const session = await getServerSession(authOptions);
-
-  if (!session) {
-    return new Response('Unauthorized', { status: 401 });
-  }
-
+async function updateProfileHandler(request, { session }) {
   try {
     const { username, profilePicture } = await request.json();
 
     if (!username) {
-      return new Response('Username is required', { status: 400 });
+      return NextResponse.json({ error: 'Username is required' }, { status: 400 });
     }
 
     // Check if username is already taken by another user
@@ -22,7 +16,7 @@ export async function PUT(request) {
     });
 
     if (existingUser && existingUser.id !== session.user.id) {
-      return new Response('Username already exists', { status: 400 });
+      return NextResponse.json({ error: 'Username already exists' }, { status: 400 });
     }
 
     const updatedUser = await prismaPostgres.user.update({
@@ -40,9 +34,11 @@ export async function PUT(request) {
       },
     });
 
-    return Response.json(updatedUser);
+    return NextResponse.json(updatedUser);
   } catch (error) {
     console.error('Error updating profile:', error);
-    return new Response('Error updating profile', { status: 500 });
+    return NextResponse.json({ error: 'Error updating profile' }, { status: 500 });
   }
 }
+
+export const PUT = withAuth(updateProfileHandler);

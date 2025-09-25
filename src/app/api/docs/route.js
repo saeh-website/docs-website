@@ -1,32 +1,28 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { prismaMongo } from "@/lib/prismaMongo";
+import { prismaMongo } from "../../../lib/prismaMongo";
 import { NextResponse } from "next/server";
+import { withPermission } from "../../../lib/permission_handler";
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(request) {
+async function getDocsHandler(request, { session }) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const role = session.user.currentDomain?.userRole;
-    if (!role) {
-      return NextResponse.json({ error: "User role missing" }, { status: 400 });
-    }
-
     const url = new URL(request.url);
     const domainId = url.searchParams.get("domainId");
 
     if (!domainId) {
-      return NextResponse.json({ error: "domainId required" }, { status: 400 });
+      return NextResponse.json({ error: "domainId is required" }, { status: 400 });
     }
 
-    // Always filter by domainId (even for superadmin/doc_admin)
+    const userRole = session.user.currentDomain.roleName;
+
+    // Find documents that belong to the specified domain
+    // and are visible to the user's role.
     const docs = await prismaMongo.doc.findMany({
-      where: { domainId },
+      where: {
+        domainIds: { has: domainId },
+        visibleToRoles: { has: userRole },
+        deleted: false,
+      },
       orderBy: { createdAt: "desc" },
     });
 
@@ -39,3 +35,5 @@ export async function GET(request) {
     );
   }
 }
+
+export const GET = withPermission('doc_read')(getDocsHandler);
