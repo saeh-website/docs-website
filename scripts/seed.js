@@ -1,3 +1,4 @@
+// scripts/seed.js
 import { prismaPostgres } from "../src/lib/prismaPostgres";
 import { prismaMongo } from "../src/lib/prismaMongo";
 import bcrypt from "bcryptjs";
@@ -5,17 +6,20 @@ import bcrypt from "bcryptjs";
 const postgres = prismaPostgres;
 const mongo = prismaMongo;
 
-// Normalize Postgres models (handle User vs user casing differences)
 const pgUser = postgres.User ?? postgres.user;
 const pgDomain = postgres.Domain ?? postgres.domain;
+const pgUserDomain = postgres.UserDomain ?? postgres.userDomain;
 
-// Normalize Mongo models
 const mgDoc = mongo.Doc ?? mongo.doc;
+
+const hash = (pw) => bcrypt.hash(pw, 12);
+
+const rolesHierarchy = ["editor", "site_admin", "doc_admin", "superadmin"];
 
 export async function seed() {
   console.log("🌱 Starting database seed...");
 
-  // --- Create default domains in Postgres ---
+  // --- Postgres: create domains ---
   const domainNames = ["option1", "option2", "option3"];
   const domains = await Promise.all(
     domainNames.map((name) =>
@@ -28,115 +32,97 @@ export async function seed() {
   );
   console.log("✅ Domains created:", domainNames);
 
-  const hash = (pw) => bcrypt.hash(pw, 12);
+  // --- Postgres: create users ---
+  const usersData = [
+    { username: "superadmin", password: "admin123", role: "superadmin" },
+    { username: "docadmin1", password: "docadmin123", role: "doc_admin" },
+    { username: "siteadmin1", password: "siteadmin123", role: "site_admin" },
+    { username: "editor1", password: "editor123", role: "editor" },
+    { username: "editor2", password: "editor123", role: "editor" },
+  ];
 
-  // --- Superadmin ---
-  const superadmin = await pgUser.upsert({
-    where: { username: "superadmin" },
-    update: {},
-    create: {
-      username: "superadmin",
-      password: await hash("admin123"),
-      profilePicture: "/images/default-avatar.png",
-      userDomains: {
-        create: domains.map((domain, idx) => ({
-          domainId: domain.id,
-          userRole: "superadmin",
-          isDefault: idx === 0,
-        })),
-      },
-    },
-  });
-
-  // --- Site Admin ---
-  await pgUser.upsert({
-    where: { username: "siteadmin1" },
-    update: {},
-    create: {
-      username: "siteadmin1",
-      password: await hash("siteadmin123"),
-      profilePicture: "/images/default-avatar.png",
-      userDomains: {
-        create: {
-          domainId: domains[0].id,
-          userRole: "site_admin",
-          isDefault: true,
-        },
-      },
-    },
-  });
-
-  await pgUser.upsert({
-    where: { username: "siteadmin3" },
-    update: {},
-    create: {
-      username: "siteadmin3",
-      password: await hash("siteadmin123"),
-      profilePicture: "/images/default-avatar.png",
-      userDomains: {
-        create: {
-          domainId: domains[2].id,
-          userRole: "site_admin",
-          isDefault: true,
-        },
-      },
-    },
-  });
-
-  // --- Editor ---
-  await pgUser.upsert({
-    where: { username: "editor2" },
-    update: {},
-    create: {
-      username: "editor2",
-      password: await hash("editor123"),
-      profilePicture: "/images/default-avatar.png",
-      userDomains: {
-        create: {
-          domainId: domains[1].id,
-          userRole: "editor",
-          isDefault: true,
-        },
-        create: {
-          domainId: domains[0].id,
-          userRole: "site_admin",
-          isDefault: false,
-        },
-      },
-    },
-  });
-
-  // --- Sample documents in Mongo for all domains ---
-  for (const domain of domains) {
-    const existingDoc = await mgDoc.findFirst({
-      where: {
-        title: `testdoc2-${domain.name}`,
-        domainId: String(domain.id),
+  for (const u of usersData) {
+    const user = await pgUser.upsert({
+      where: { username: u.username },
+      update: {},
+      create: {
+        username: u.username,
+        password: await hash(u.password),
+        profilePicture: "/images/default-avatar.png",
       },
     });
 
-    if (!existingDoc) {
-      await mgDoc.create({
-        data: {
-          title: `testdoc2-${domain.name}`,
-          content: `
-            <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. هذه مستند تجريبي لنطاق ${domain.name}.</p>
-            <img src="https://png.pngtree.com/png-vector/20210604/ourmid/pngtree-gray-network-placeholder-png-image_3416659.jpg"
-                 alt="placeholder" style="max-width:100%; height:auto;" />
-          `,
-          domainId: String(domain.id),
-          authorId: String(superadmin.id),
+    // Assign userDomains
+    for (let i = 0; i < domains.length; i++) {
+      const domain = domains[i];
+      let userRole = u.role;
+
+      // For editor, only assign to first domain randomly
+      if (u.role === "editor") {
+        if (i > 0) continue;
+      }
+
+      await pgUserDomain.upsert({
+        where: {
+          userId_domainId: { userId: user.id, domainId: domain.id },
+        },
+        update: {},
+        create: {
+          userId: user.id,
+          domainId: domain.id,
+          userRole, // role bound to domain
         },
       });
-      console.log(`✅ Sample document "testdoc2-${domain.name}" created for domain ${domain.name}`);
+    }
+  }
+  console.log("✅ Users and userDomains created");
+
+  // --- MongoDB: sample documents ---
+  const sampleDocs = [
+    {
+      title: "Welcome Guide",
+      content: "<p>Welcome to the platform! This doc is for all users.</p>",
+      domainIds: domains.map((d) => d.id),
+      visibleToRoles: rolesHierarchy, // all roles
+    },
+    {
+      title: "Editor Guidelines",
+      content: "<p>This document is only for editors.</p>",
+      domainIds: [domains[0].id],
+      visibleToRoles: ["editor"],
+    },
+    {
+      title: "Admin Instructions",
+      content: "<p>Instructions for site and doc admins only.</p>",
+      domainIds: domains.map((d) => d.id),
+      visibleToRoles: ["site_admin", "doc_admin", "superadmin"],
+    },
+    {
+      title: "Superadmin Secret",
+      content: "<p>Only superadmin can see this doc.</p>",
+      domainIds: domains.map((d) => d.id),
+      visibleToRoles: ["superadmin"],
+    },
+  ];
+
+  for (const doc of sampleDocs) {
+    const existing = await mgDoc.findFirst({ where: { title: doc.title } });
+    if (!existing) {
+      await mgDoc.create({
+        data: {
+          ...doc,
+          authorId: "0", // optional, you can assign a userId from postgres
+        },
+      });
+      console.log(`✅ Created doc: ${doc.title}`);
     } else {
-      console.log(`ℹ️ Sample document "testdoc2-${domain.name}" already exists for domain ${domain.name}`);
+      console.log(`ℹ️ Doc already exists: ${doc.title}`);
     }
   }
 
   console.log("🎉 Database seeding completed!");
 
-  // disconnect clients
+  // Disconnect
   await postgres.$disconnect();
   await mongo.$disconnect();
 }

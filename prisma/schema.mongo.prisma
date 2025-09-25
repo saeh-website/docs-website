@@ -11,15 +11,16 @@ datasource db {
 }
 
 model Doc {
-  id        String   @id @map("_id") @default(auto()) @db.ObjectId
-  title     String
-  content   String
-  domainId  String
-  authorId  String
-  deleted   Boolean  @default(false)
-  deletedAt DateTime?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             String    @id @map("_id") @default(auto()) @db.ObjectId
+  title          String
+  content        String
+  domainIds      String[]             // Multiple domains
+  visibleToRoles String[]             // Optional: user roles that can see this doc
+  authorId       String
+  deleted        Boolean   @default(false)
+  deletedAt      DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   @@index([domainId])
 }

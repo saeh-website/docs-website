@@ -10,40 +10,59 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  username  String   @unique
-  password  String
-  profilePicture String? @default("/images/default-avatar.png")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  userDomains UserDomain[]
+  id             String    @id @default(cuid())
+  username       String    @unique
+  password       String
+  profilePicture String?
+  currentDomainId String?  // current domain context for the user
+  currentDomain   Domain?  @relation(fields: [currentDomainId], references: [id])
+  userDomains     UserDomain[]
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 }
 
 model Domain {
-  id   String @id @default(cuid())
-  name String @unique
-  createdAt DateTime @default(now())
-
-  userDomains UserDomain[]
+  id        String       @id @default(cuid())
+  name      String       @unique
+  users     UserDomain[]
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
 }
 
 model UserDomain {
-  id       String @id @default(cuid())
+  id       String   @id @default(cuid())
+  user     User     @relation(fields: [userId], references: [id])
   userId   String
+  domain   Domain   @relation(fields: [domainId], references: [id])
   domainId String
-  userRole UserRole
-  isDefault Boolean @default(false)
-
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  domain Domain @relation(fields: [domainId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, domainId])
+  userRole UserRole @relation(fields: [userRoleId], references: [id])
+  userRoleId String
 }
 
-enum UserRole {
-  editor
-  site_admin
-  doc_admin
-  superadmin
+model UserRole {
+  id           String         @id @default(cuid())
+  name         String         @unique
+  description  String?
+  permissions  RolePermission[]
+}
+
+model Permission {
+  id          String       @id @default(cuid())
+  name        String       @unique
+  description String?
+}
+
+model RolePermission {
+  id           String         @id @default(cuid())
+  role         UserRole       @relation(fields: [roleId], references: [id])
+  roleId       String
+  permission   Permission     @relation(fields: [permissionId], references: [id])
+  permissionId String
+  appliesToRoles String[]     // optional: restrict effect to specific roles
+  scope         PermissionScope @default(ASSIGNED_DOMAINS)
+}
+
+enum PermissionScope {
+  ALL_DOMAINS
+  ASSIGNED_DOMAINS
 }
