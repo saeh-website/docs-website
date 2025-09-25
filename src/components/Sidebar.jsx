@@ -1,15 +1,18 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import DomainModal from "./DomainModal";
 
 export default function Sidebar({ isOpen, toggle }) {
   console.log("Sidebar component is rendering");
 
   const { data: session, status } = useSession();
   const router = useRouter();
+  const [isDomainModalOpen, setIsDomainModalOpen] = useState(false);
 
   if (status === "loading") {
     return <div>Loading...</div>;
@@ -76,13 +79,13 @@ export default function Sidebar({ isOpen, toggle }) {
             <p className="text-sm">
               النطاق الحالي: {user.currentDomain?.domain?.name}
             </p>
-            <Link
-              href="/select-domain"
-              className="text-sm hover:underline"
+            <button
+              onClick={() => setIsDomainModalOpen(true)}
+              className="text-sm hover:underline cursor-pointer"
               style={{ color: "var(--link-color)" }}
             >
               (تغيير)
-            </Link>
+            </button>
           </div>
 
           {/* Navigation */}
@@ -143,6 +146,12 @@ export default function Sidebar({ isOpen, toggle }) {
           onClick={toggle}
         />
       )}
+
+      {/* Domain Selection Modal */}
+      <DomainModal
+        isOpen={isDomainModalOpen}
+        onClose={() => setIsDomainModalOpen(false)}
+      />
     </>
   );
 }

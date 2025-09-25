@@ -20,12 +20,9 @@ export async function middleware(request) {
       return NextResponse.redirect(dashboardUrl)
     }
 
-    if (token.requiresDomainSelection) {
-      if (pathname !== '/select-domain') {
-        const selectDomainUrl = new URL('/select-domain', request.url)
-        return NextResponse.redirect(selectDomainUrl)
-      }
-    } else if (pathname === '/select-domain') {
+    // Users who need domain selection will be redirected to dashboard
+    // where they can use the domain selection modal in the sidebar
+    if (token.requiresDomainSelection && pathname !== '/dashboard') {
       const dashboardUrl = new URL('/dashboard', request.url)
       return NextResponse.redirect(dashboardUrl)
     }
