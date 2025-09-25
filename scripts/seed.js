@@ -115,10 +115,11 @@ export async function seed() {
     const permissionIds = rolePermissionsData[roleName];
 
     for (const permissionId of permissionIds) {
+      const scopeAllDomains = roleName === 'superadmin' ? true : Math.random() > 0.5;
       await pgRolePermission.upsert({
         where: { roleId_permissionId: { roleId, permissionId } },
-        update: {},
-        create: { roleId, permissionId },
+        update: { scopeAllDomains },
+        create: { roleId, permissionId, scopeAllDomains },
       });
     }
   }
