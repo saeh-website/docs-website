@@ -10,10 +10,10 @@ export async function GET() {
 
     try {
       pgUsers = await prismaPostgres.user.findMany({
-        take: 3, // just sample first 3
+        take: 5, // just sample first 3
       });
       pgDomains = await prismaPostgres.domain.findMany({
-        take: 3,
+        take: 5,
       });
     } catch (err) {
       console.error("❌ Postgres test error:", err);

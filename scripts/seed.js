@@ -70,7 +70,7 @@ export async function seed() {
     where: { username: "siteadmin3" },
     update: {},
     create: {
-      username: "siteadmin2",
+      username: "siteadmin3",
       password: await hash("siteadmin123"),
       profilePicture: "/images/default-avatar.png",
       userDomains: {
@@ -88,7 +88,7 @@ export async function seed() {
     where: { username: "editor2" },
     update: {},
     create: {
-      username: "editor1",
+      username: "editor2",
       password: await hash("editor123"),
       profilePicture: "/images/default-avatar.png",
       userDomains: {
@@ -118,7 +118,7 @@ export async function seed() {
     if (!existingDoc) {
       await mgDoc.create({
         data: {
-          title: `testdoc-${domain.name}`,
+          title: `testdoc2-${domain.name}`,
           content: `
             <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. هذه مستند تجريبي لنطاق ${domain.name}.</p>
             <img src="https://png.pngtree.com/png-vector/20210604/ourmid/pngtree-gray-network-placeholder-png-image_3416659.jpg"
