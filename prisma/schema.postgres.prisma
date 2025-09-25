@@ -20,11 +20,11 @@ model User {
 }
 
 model Domain {
-  id           String        @id @default(cuid())
-  name         String        @unique
+  id           String       @id @default(cuid())
+  name         String       @unique
   userDomains  UserDomain[]
 
-  usersAsCurrentDomain User[]? @relation("CurrentDomainForUser")  // <- this must match relation name
+  usersAsCurrentDomain User[] @relation("CurrentDomainForUser")  // no `?`
 }
 
 model UserDomain {
