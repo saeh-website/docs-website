@@ -1,12 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { useSession, getSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 
 export default function DomainModal({ isOpen, onClose }) {
   const { data: session, update } = useSession();
-  const router = useRouter();
   const [error, setError] = useState("");
 
   if (!isOpen) return null;
@@ -36,28 +34,6 @@ export default function DomainModal({ isOpen, onClose }) {
     }
   };
 
-  const handleSetDefault = async (domainId) => {
-    setError("");
-    try {
-      const res = await fetch("/api/domains/set-default", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ domainId }),
-      });
-
-      if (!res.ok) {
-        throw new Error("Failed to set default domain");
-      }
-
-      // Show success message
-      alert("تم تعيين النطاق الافتراضي بنجاح!");
-
-      // Refresh the session to get the latest user data
-      await getSession();
-    } catch (err) {
-      setError(err.message);
-    }
-  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
@@ -79,28 +55,39 @@ export default function DomainModal({ isOpen, onClose }) {
         )}
 
         <div className="space-y-4">
-          {session?.user.userDomains?.map((domain) => (
-            <div
-              key={domain.domainId}
-              className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
-            >
-              <span className="text-lg">{domain.domainName}</span>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => handleDomainSelection(domain)}
-                  className="bg-[#e01f26] text-white font-bold py-2 px-4 rounded-lg hover:opacity-80 transition-opacity duration-300"
-                >
-                  اختيار
-                </button>
-                <button
-                  onClick={() => handleSetDefault(domain.domainId)}
-                  className="bg-gray-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-600 transition-colors duration-300"
-                >
-                  تعيين كافتراضي
-                </button>
+          {session?.user.userDomains?.map((userDomain) => {
+            const isCurrentDomain = userDomain.id === session?.user.currentDomain?.id;
+            return (
+              <div
+                key={userDomain.id}
+                className={`flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 ${
+                  isCurrentDomain ? "border-[#e01f26] bg-red-50" : ""
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-lg">{userDomain.domain.name}</span>
+                  {isCurrentDomain && (
+                    <span className="text-sm bg-[#e01f26] text-white px-2 py-1 rounded">
+                      النطاق الحالي
+                    </span>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleDomainSelection(userDomain)}
+                    disabled={isCurrentDomain}
+                    className={`font-bold py-2 px-4 rounded-lg transition-opacity duration-300 ${
+                      isCurrentDomain
+                        ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                        : "bg-[#e01f26] text-white hover:opacity-80"
+                    }`}
+                  >
+                    {isCurrentDomain ? "مُختار" : "اختيار"}
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {session?.user.userDomains?.length === 0 && (
