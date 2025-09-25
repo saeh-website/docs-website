@@ -15,9 +15,13 @@ model User {
   email         String?      @unique
   password      String
   profilePicture String?
-  currentDomainId String?    // points to UserDomain.id
-  currentDomain  UserDomain? @relation(fields: [currentDomainId], references: [id])
-  userDomains   UserDomain[]
+
+  // All domains assigned to this user
+  userDomains    UserDomain[] @relation("UserToUserDomains")
+
+  currentDomain  UserDomain?  @relation("UserToCurrentDomain", fields: [currentDomainId], references: [id])
+  currentDomainId String?
+  
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
 }
@@ -35,11 +39,14 @@ model Domain {
 model UserDomain {
   id        String   @id @default(cuid())
   userId    String
-  domainId  String
-  userRoleId String
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation("UserToUserDomains", fields: [userId], references: [id])
+  
   domain    Domain   @relation(fields: [domainId], references: [id])
+  domainId  String
+  
+  userRoleId String
   userRole  UserRole @relation(fields: [userRoleId], references: [id])
+  
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
