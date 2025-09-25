@@ -76,19 +76,7 @@ export default function Login() {
           />
         </div>
 
-        <div className="form-group">
-          <label htmlFor="domain">Domain:</label>
-          <select
-            id="domain"
-            value={domainId}
-            onChange={(e) => setDomainId(e.target.value)}
-            className="form-control"
-          >
-            <option value="">Select Domain</option>
-            {/* Domains will be loaded dynamically based on username */}
-          </select>
-        </div>
-
+        
         {error && (
           <div style={{ color: 'red', marginBottom: '1rem' }}>
             {error}
