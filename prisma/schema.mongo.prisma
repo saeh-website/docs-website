@@ -11,13 +11,15 @@ datasource db {
 }
 
 model Doc {
-  id String @id @map("_id") @db.ObjectId @default(auto())
+  id        String   @id @default(cuid())
   title     String
   content   String
   domainId  String
+  authorId  String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  authorId  String
+  deleted   Boolean  @default(false)
+  deletedAt DateTime?
 
   @@index([domainId])
 }
