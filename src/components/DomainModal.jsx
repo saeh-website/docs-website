@@ -1,39 +1,49 @@
 "use client";
 
 import { useState } from "react";
-import { useSession } from "next-auth/react";
+import { useSession, getSession } from "next-auth/react";
 
 export default function DomainModal({ isOpen, onClose }) {
   const { data: session, update } = useSession();
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   if (!isOpen) return null;
 
-  const handleDomainSelection = async (domain) => {
+  const handleDomainSelection = async (userDomain) => {
     try {
       setError("");
-      // Update the session with the new current domain
-      const newSession = await update({
-        ...session,
-        user: {
-          ...session.user,
-          currentDomain: domain,
-          requiresDomainSelection: false,
-        },
+      setIsLoading(true);
+
+      // First, update the backend with the new current domain
+      const response = await fetch("/api/domains/set-default", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ domainId: userDomain.domain.id }),
       });
 
-      if (newSession) {
+      if (!response.ok) {
+        throw new Error("Failed to update current domain");
+      }
+
+      // Force session refresh to get updated user data from database
+      const updatedSession = await getSession();
+
+      if (updatedSession) {
+        // Update the session context with fresh data
+        await update(updatedSession);
         onClose(); // Close the modal
-        // Optionally refresh the page to show updated domain
+        // Refresh the page to ensure all components show updated domain data
         window.location.reload();
       } else {
-        setError("Failed to update session. Please try again.");
+        throw new Error("Failed to refresh session");
       }
     } catch (err) {
+      console.error("Domain selection error:", err);
       setError("Failed to select domain. Please try again.");
+      setIsLoading(false);
     }
   };
-
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
@@ -42,7 +52,12 @@ export default function DomainModal({ isOpen, onClose }) {
           <h2 className="text-2xl font-bold text-[#191919]">اختر النطاق</h2>
           <button
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 text-2xl font-bold"
+            disabled={isLoading}
+            className={`text-2xl font-bold ${
+              isLoading 
+                ? "text-gray-300 cursor-not-allowed" 
+                : "text-gray-500 hover:text-gray-700"
+            }`}
           >
             ×
           </button>
@@ -54,9 +69,16 @@ export default function DomainModal({ isOpen, onClose }) {
           </div>
         )}
 
+        {isLoading && (
+          <div className="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded mb-4">
+            جاري تحديث النطاق...
+          </div>
+        )}
+
         <div className="space-y-4">
           {session?.user.userDomains?.map((userDomain) => {
-            const isCurrentDomain = userDomain.id === session?.user.currentDomain?.id;
+            const isCurrentDomain =
+              userDomain.id === session?.user.currentDomain?.id;
             return (
               <div
                 key={userDomain.id}
@@ -75,14 +97,16 @@ export default function DomainModal({ isOpen, onClose }) {
                 <div className="flex gap-2">
                   <button
                     onClick={() => handleDomainSelection(userDomain)}
-                    disabled={isCurrentDomain}
+                    disabled={isCurrentDomain || isLoading}
                     className={`font-bold py-2 px-4 rounded-lg transition-opacity duration-300 ${
                       isCurrentDomain
                         ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                        : isLoading
+                        ? "bg-gray-400 text-white cursor-not-allowed"
                         : "bg-[#e01f26] text-white hover:opacity-80"
                     }`}
                   >
-                    {isCurrentDomain ? "مُختار" : "اختيار"}
+                    {isLoading ? "جاري التحديث..." : isCurrentDomain ? "مُختار" : "اختيار"}
                   </button>
                 </div>
               </div>
