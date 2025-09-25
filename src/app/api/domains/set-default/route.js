@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
-import { prismaPostgres } from '../../../lib/prismaPostgres'
-import { withAuth } from '../../../lib/permission_handler';
+import { prismaPostgres } from '@/lib/prismaPostgres'
+import { withAuth } from '@/lib/permission_handler';
 
 async function setDefaultDomainHandler(req, { session }) {
   try {

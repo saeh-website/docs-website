@@ -1,8 +1,8 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../auth/[...nextauth]/route';
-import { prismaPostgres } from '../../../lib/prismaPostgres';
+import { prismaPostgres } from '@/lib/prismaPostgres';
 import bcrypt from 'bcryptjs';
-import { withPermission } from '../../../lib/permission_handler';
+import { withPermission } from '@/lib/permission_handler';
 import { NextResponse } from 'next/server';
 
 async function getUsersHandler(request, { session }) {

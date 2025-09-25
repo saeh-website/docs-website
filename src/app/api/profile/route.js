@@ -1,5 +1,5 @@
-import { prismaPostgres } from '../../../lib/prismaPostgres';
-import { withAuth } from '../../../lib/permission_handler';
+import { prismaPostgres } from '@/lib/prismaPostgres';
+import { withAuth } from '@/lib/permission_handler';
 import { NextResponse } from 'next/server';
 
 async function updateProfileHandler(request, { session }) {

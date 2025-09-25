@@ -1,5 +1,5 @@
-import { prismaPostgres } from '../../../lib/prismaPostgres';
-import { withPermission } from '../../../lib/permission_handler';
+import { prismaPostgres } from '@/lib/prismaPostgres';
+import { withPermission } from '@/lib/permission_handler';
 import { NextResponse } from 'next/server';
 
 async function getDomainsHandler(request, { session }) {
