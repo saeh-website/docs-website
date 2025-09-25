@@ -26,11 +26,13 @@ async function setDefaultDomainHandler(req, { session }) {
     }
 
     // Set the user's currentDomainId to the ID of the found UserDomain entry
-    await prismaPostgres.user.update({
+    const updatedUser = await prismaPostgres.user.update({
       where: { id: userId },
       data: { currentDomainId: userDomain.id },
     });
 
+    console.log(`Updated user ${userId} currentDomainId to ${userDomain.id} for domain ${domainId}`);
+    
     return NextResponse.json({ message: 'Default domain updated successfully' })
   } catch (error) {
     console.error('Failed to set default domain:', error)

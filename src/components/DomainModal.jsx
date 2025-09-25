@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useSession, getSession } from "next-auth/react";
+import { useSession } from "next-auth/react";
 
 export default function DomainModal({ isOpen, onClose }) {
   const { data: session, update } = useSession();
@@ -26,18 +26,28 @@ export default function DomainModal({ isOpen, onClose }) {
         throw new Error("Failed to update current domain");
       }
 
-      // Force session refresh to get updated user data from database
-      const updatedSession = await getSession();
+      // Fetch fresh user data from our custom refresh endpoint
+      const userResponse = await fetch("/api/auth/refresh-user", {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      });
 
-      if (updatedSession) {
-        // Update the session context with fresh data
-        await update(updatedSession);
-        onClose(); // Close the modal
-        // Refresh the page to ensure all components show updated domain data
-        window.location.reload();
-      } else {
-        throw new Error("Failed to refresh session");
+      if (!userResponse.ok) {
+        throw new Error("Failed to refresh user data");
       }
+
+      const refreshedUserData = await userResponse.json();
+
+      console.log("Refreshed user data:", refreshedUserData);
+
+      // Update the session with fresh user data
+      await update({
+        ...session,
+        user: refreshedUserData,
+      });
+
+      setIsLoading(false);
+      onClose(); // Close the modal
     } catch (err) {
       console.error("Domain selection error:", err);
       setError("Failed to select domain. Please try again.");
