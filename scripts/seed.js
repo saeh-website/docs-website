@@ -110,7 +110,7 @@ export async function seed() {
   for (const domain of domains) {
     const existingDoc = await mgDoc.findFirst({
       where: {
-        title: `testdoc-${domain.name}`,
+        title: `testdoc2-${domain.name}`,
         domainId: String(domain.id),
       },
     });
@@ -128,9 +128,9 @@ export async function seed() {
           authorId: String(superadmin.id),
         },
       });
-      console.log(`✅ Sample document "testdoc-${domain.name}" created for domain ${domain.name}`);
+      console.log(`✅ Sample document "testdoc2-${domain.name}" created for domain ${domain.name}`);
     } else {
-      console.log(`ℹ️ Sample document "testdoc-${domain.name}" already exists for domain ${domain.name}`);
+      console.log(`ℹ️ Sample document "testdoc2-${domain.name}" already exists for domain ${domain.name}`);
     }
   }
 
