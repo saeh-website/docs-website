@@ -1,5 +1,5 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
   output        = "../src/generated/postgres"
   binaryTargets = ["native", "rhel-openssl-3.0.x"]
 }
@@ -10,66 +10,64 @@ datasource db {
 }
 
 model User {
-  id               String       @id @default(cuid())
-  username         String       @unique
-  password         String
-  profilePicture   String?
-  userDomains      UserDomain[]
-  currentDomainId  String?      
-  currentDomain    Domain?      @relation("CurrentDomainForUser", fields: [currentDomainId], references: [id])
+  id            String       @id @default(cuid())
+  username      String       @unique
+  email         String?      @unique
+  password      String
+  profilePicture String?
+  currentDomainId String?    // points to UserDomain.id
+  currentDomain  UserDomain? @relation(fields: [currentDomainId], references: [id])
+  userDomains   UserDomain[]
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
 }
 
 model Domain {
-  id           String       @id @default(cuid())
-  name         String       @unique
-  userDomains  UserDomain[]
-
-  usersAsCurrentDomain User[] @relation("CurrentDomainForUser")  // no `?`
+  id          String       @id @default(cuid())
+  name        String       @unique
+  description String?
+  userDomains UserDomain[]
+  docs        Doc[]        // optional, if you link docs to postgres later
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
 }
 
 model UserDomain {
-  id       String  @id @default(cuid())
-  userId   String
-  domainId String
-  userRole String
+  id        String   @id @default(cuid())
+  userId    String
+  domainId  String
+  userRoleId String
+  user      User     @relation(fields: [userId], references: [id])
+  domain    Domain   @relation(fields: [domainId], references: [id])
+  userRole  UserRole @relation(fields: [userRoleId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  user   User   @relation(fields: [userId], references: [id])
-  domain Domain @relation(fields: [domainId], references: [id])
-
-  @@unique([userId, domainId])
+  @@unique([userId, domainId]) // a user can have one role per domain
 }
 
 model UserRole {
   id          String           @id @default(cuid())
   name        String           @unique
   description String?
-  permissions RolePermission[] @relation("RoleToPermission")
-}
-
-model Permission {
-  id              String           @id @default(cuid())
-  name            String           @unique
-  description     String?
   rolePermissions RolePermission[]
 }
 
-model Role {
-  id              String           @id @default(cuid())
-  name            String           @unique
-  description     String?
-  rolePermissions RolePermission[] @relation("RoleToPermission")
+model Permission {
+  id          String           @id @default(cuid())
+  name        String           @unique
+  description String?
+  rolePermissions RolePermission[]
 }
 
 model RolePermission {
-  id        String   @id @default(cuid())
-  roleId    String
+  id           String     @id @default(cuid())
+  roleId       String
   permissionId String
-  role      Role     @relation("RoleToPermission", fields: [roleId], references: [id])
-  permission Permission @relation(fields: [permissionId], references: [id])
+  scopeAllDomains Boolean @default(false) // if true, permission applies to all domains
+  role         UserRole   @relation(fields: [roleId], references: [id])
+  permission   Permission @relation(fields: [permissionId], references: [id])
+
+  @@unique([roleId, permissionId]) // one permission per role only once
 }
 
-
-enum PermissionScope {
-  ALL_DOMAINS
-  ASSIGNED_DOMAINS
-}
