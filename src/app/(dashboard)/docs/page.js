@@ -19,19 +19,10 @@ export default function DocsPage() {
   const userRole = user?.currentDomain?.userRole?.toLowerCase();
 
   useEffect(() => {
-    if (user) {
+    if (user?.currentDomain?.domainId) {
       setDomains(user.userDomains || []);
-  
-      // Pick default domain from userDomains
-      const defaultDomain = user.userDomains?.find((d) => d.isDefault);
-  
-      if (defaultDomain) {
-        setDomainId(defaultDomain.domainId);
-        fetchDocs(defaultDomain.domainId);
-      } else if (user.currentDomain?.domainId) {
-        setDomainId(user.currentDomain.domainId);
-        fetchDocs(user.currentDomain.domainId);
-      }
+      setDomainId(user.currentDomain.domainId);
+      fetchDocs(user.currentDomain.domainId);
     }
   }, [user]);
   
@@ -62,6 +53,7 @@ export default function DocsPage() {
   const handleDomainChange = (e) => {
     const selectedId = e.target.value;
     setDomainId(selectedId);
+    setDocs([]); // clear old docs while loading
     fetchDocs(selectedId);
   };
 
