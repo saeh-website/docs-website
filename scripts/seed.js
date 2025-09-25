@@ -75,7 +75,7 @@ export async function seed() {
       profilePicture: "/images/default-avatar.png",
       userDomains: {
         create: {
-          domainId: domains[0].id,
+          domainId: domains[1].id,
           userRole: "site_admin",
           isDefault: true,
         },
