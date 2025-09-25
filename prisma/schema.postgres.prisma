@@ -10,34 +10,36 @@ datasource db {
 }
 
 model User {
-  id             String    @id @default(cuid())
-  username       String    @unique
-  password       String
+  id            String       @id @default(cuid())
+  username      String       @unique
+  password      String
   profilePicture String?
-  currentDomainId String?  // current domain context for the user
-  currentDomain   Domain?  @relation(fields: [currentDomainId], references: [id])
-  userDomains     UserDomain[]
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  
+  userDomains   UserDomain[]
+  
+  currentDomain Domain?      @relation(fields: [currentDomainId], references: [id])
+  currentDomainId String?
 }
 
 model Domain {
-  id        String       @id @default(cuid())
-  name      String       @unique
-  users     UserDomain[]
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
+  id          String      @id @default(cuid())
+  name        String      @unique
+  userDomains UserDomain[]
+
 }
 
 model UserDomain {
-  id       String   @id @default(cuid())
-  user     User     @relation(fields: [userId], references: [id])
+  id       String  @id @default(cuid())
   userId   String
-  domain   Domain   @relation(fields: [domainId], references: [id])
   domainId String
-  userRole UserRole @relation(fields: [userRoleId], references: [id])
-  userRoleId String
+  userRole String
+
+  user   User   @relation(fields: [userId], references: [id])
+  domain Domain @relation(fields: [domainId], references: [id])
+  
+  @@unique([userId, domainId])
 }
+
 
 model UserRole {
   id           String         @id @default(cuid())
