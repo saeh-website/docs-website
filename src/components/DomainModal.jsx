@@ -54,8 +54,8 @@ export default function DomainModal({ isOpen, onClose }) {
             onClick={onClose}
             disabled={isLoading}
             className={`text-2xl font-bold ${
-              isLoading 
-                ? "text-gray-300 cursor-not-allowed" 
+              isLoading
+                ? "text-gray-300 cursor-not-allowed"
                 : "text-gray-500 hover:text-gray-700"
             }`}
           >
@@ -106,7 +106,11 @@ export default function DomainModal({ isOpen, onClose }) {
                         : "bg-[#e01f26] text-white hover:opacity-80"
                     }`}
                   >
-                    {isLoading ? "جاري التحديث..." : isCurrentDomain ? "مُختار" : "اختيار"}
+                    {isLoading
+                      ? "جاري التحديث..."
+                      : isCurrentDomain
+                      ? "مُختار"
+                      : "اختيار"}
                   </button>
                 </div>
               </div>
