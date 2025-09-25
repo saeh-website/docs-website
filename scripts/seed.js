@@ -67,7 +67,7 @@ export async function seed() {
   });
 
   await pgUser.upsert({
-    where: { username: "siteadmin2" },
+    where: { username: "siteadmin3" },
     update: {},
     create: {
       username: "siteadmin2",
@@ -75,7 +75,7 @@ export async function seed() {
       profilePicture: "/images/default-avatar.png",
       userDomains: {
         create: {
-          domainId: domains[1].id,
+          domainId: domains[2].id,
           userRole: "site_admin",
           isDefault: true,
         },
@@ -85,7 +85,7 @@ export async function seed() {
 
   // --- Editor ---
   await pgUser.upsert({
-    where: { username: "editor1" },
+    where: { username: "editor2" },
     update: {},
     create: {
       username: "editor1",
@@ -93,9 +93,14 @@ export async function seed() {
       profilePicture: "/images/default-avatar.png",
       userDomains: {
         create: {
-          domainId: domains[0].id,
+          domainId: domains[1].id,
           userRole: "editor",
           isDefault: true,
+        },
+        create: {
+          domainId: domains[0].id,
+          userRole: "site_admin",
+          isDefault: false,
         },
       },
     },
