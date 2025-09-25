@@ -21,6 +21,4 @@ model Doc {
   deletedAt      DateTime?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
-
-  @@index([domainId])
 }
