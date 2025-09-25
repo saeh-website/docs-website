@@ -83,6 +83,16 @@ export default function DocsPage() {
     setShowForm(true);
   };
 
+  const handleRepublish = async (doc) => {
+    try {
+      await axios.put(`/api/docs/${doc.id}`, { action: "republish" });
+      fetchDocs(domainId);
+    } catch (err) {
+      console.error("Republish error:", err);
+      alert("حدث خطأ أثناء إعادة نشر المستند");
+    }
+  };
+
   const openConfirmModal = (doc, action) => {
     setConfirmModal({ show: true, doc, action });
   };
