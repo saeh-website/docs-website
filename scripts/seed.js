@@ -10,6 +10,8 @@ const pgUser = postgres.User ?? postgres.user;
 const pgDomain = postgres.Domain ?? postgres.domain;
 const pgUserDomain = postgres.UserDomain ?? postgres.userDomain;
 const pgUserRole = postgres.UserRole ?? postgres.userRole;
+const pgPermission = postgres.Permission ?? postgres.permission;
+const pgRolePermission = postgres.RolePermission ?? postgres.rolePermission;
 
 const mgDoc = mongo.Doc ?? mongo.doc;
 
@@ -43,6 +45,84 @@ export async function seed() {
   }, {});
   console.log("✅ User roles created/verified:", roles.map(r => r.name));
 
+
+  // --- Postgres: create permissions ---
+  const permissionsData = [
+    // Docs
+    { name: 'doc_create', description: 'Can create documents' },
+    { name: 'doc_read', description: 'Can read documents' },
+    { name: 'doc_update', description: 'Can update documents' },
+    { name: 'doc_delete', description: 'Can delete documents' },
+    // Users
+    { name: 'user_create', description: 'Can create users' },
+    { name: 'user_read', description: 'Can read users' },
+    { name: 'user_update', description: 'Can update users' },
+    { name: 'user_delete', description: 'Can delete users' },
+    // UserRoles
+    { name: 'userRole_create', description: 'Can create user roles' },
+    { name: 'userRole_read', description: 'Can read user roles' },
+    { name: 'userRole_update', description: 'Can update user roles' },
+    { name: 'userRole_delete', description: 'Can delete user roles' },
+    // Domains
+    { name: 'domain_create', description: 'Can create domains' },
+    { name: 'domain_read', description: 'Can read domains' },
+    { name: 'domain_update', description: 'Can update domains' },
+    { name: 'domain_delete', description: 'Can delete domains' },
+  ];
+
+  const permissions = await Promise.all(
+    permissionsData.map((p) =>
+      pgPermission.upsert({
+        where: { name: p.name },
+        update: {},
+        create: p,
+      })
+    )
+  );
+  const permissionsMap = permissions.reduce((acc, p) => {
+    acc[p.name] = p;
+    return acc;
+  }, {});
+  console.log('✅ Permissions created/verified:', permissions.map(p => p.name));
+
+  // --- Postgres: grant permissions to roles ---
+  const rolePermissionsData = {
+    superadmin: permissions.map((p) => p.id), // All permissions
+    doc_admin: [
+      permissionsMap['doc_create'].id,
+      permissionsMap['doc_read'].id,
+      permissionsMap['doc_update'].id,
+      permissionsMap['doc_delete'].id,
+    ],
+    site_admin: [
+      permissionsMap['user_create'].id,
+      permissionsMap['user_read'].id,
+      permissionsMap['user_update'].id,
+      permissionsMap['user_delete'].id,
+      permissionsMap['domain_create'].id,
+      permissionsMap['domain_read'].id,
+      permissionsMap['domain_update'].id,
+      permissionsMap['domain_delete'].id,
+    ],
+    editor: [
+      permissionsMap['doc_read'].id,
+      permissionsMap['doc_update'].id,
+    ],
+  };
+
+  for (const roleName in rolePermissionsData) {
+    const roleId = rolesMap[roleName].id;
+    const permissionIds = rolePermissionsData[roleName];
+
+    for (const permissionId of permissionIds) {
+      await pgRolePermission.upsert({
+        where: { roleId_permissionId: { roleId, permissionId } },
+        update: {},
+        create: { roleId, permissionId },
+      });
+    }
+  }
+  console.log('✅ Role permissions granted');
 
   // --- Postgres: create domains ---
   const domainNames = ["option1", "option2", "option3"];
