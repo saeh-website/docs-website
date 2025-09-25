@@ -10,22 +10,21 @@ datasource db {
 }
 
 model User {
-  id            String       @id @default(cuid())
-  username      String       @unique
-  password      String
-  profilePicture String?
-  
-  userDomains   UserDomain[]
-  
-  currentDomain Domain?      @relation(fields: [currentDomainId], references: [id])
-  currentDomainId String?
+  id               String       @id @default(cuid())
+  username         String       @unique
+  password         String
+  profilePicture   String?
+  userDomains      UserDomain[]
+  currentDomainId  String?      
+  currentDomain    Domain?      @relation("CurrentDomainForUser", fields: [currentDomainId], references: [id])
 }
 
 model Domain {
-  id          String      @id @default(cuid())
-  name        String      @unique
-  userDomains UserDomain[]
+  id           String        @id @default(cuid())
+  name         String        @unique
+  userDomains  UserDomain[]
 
+  usersAsCurrentDomain User[]? @relation("CurrentDomainForUser")  // <- this must match relation name
 }
 
 model UserDomain {
@@ -36,7 +35,7 @@ model UserDomain {
 
   user   User   @relation(fields: [userId], references: [id])
   domain Domain @relation(fields: [domainId], references: [id])
-  
+
   @@unique([userId, domainId])
 }
 
