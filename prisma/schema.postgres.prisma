@@ -60,6 +60,7 @@ model UserRole {
   name        String           @unique
   description String?
   rolePermissions RolePermission[]
+  userDomains     UserDomain[]
 }
 
 model Permission {

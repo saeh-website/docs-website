@@ -1,0 +1,83 @@
+generator client {
+  provider      = "prisma-client-js"
+  output        = "../src/generated/postgres"
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String       @id @default(cuid())
+  username      String       @unique
+  email         String?      @unique
+  password      String
+  profilePicture String?
+
+  // All domains assigned to this user
+  userDomains    UserDomain[] @relation("UserToUserDomains")
+
+  currentDomain  UserDomain?  @relation("UserToCurrentDomain", fields: [currentDomainId], references: [id])
+  currentDomainId String?      @unique
+  
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+}
+
+model Domain {
+  id          String       @id @default(cuid())
+  name        String       @unique
+  description String?
+  userDomains UserDomain[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+
+model UserDomain {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation("UserToUserDomains", fields: [userId], references: [id])
+  
+  domain    Domain   @relation(fields: [domainId], references: [id])
+  domainId  String
+  
+  userRoleId String
+  userRole  UserRole @relation(fields: [userRoleId], references: [id])
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  currentUser User? @relation("UserToCurrentDomain")
+
+  @@unique([userId, domainId]) // a user can have one role per domain
+}
+
+model UserRole {
+  id          String           @id @default(cuid())
+  name        String           @unique
+  description String?
+  rolePermissions RolePermission[]
+  userDomains     UserDomain[]
+}
+
+model Permission {
+  id          String           @id @default(cuid())
+  name        String           @unique
+  description String?
+  rolePermissions RolePermission[]
+}
+
+model RolePermission {
+  id           String     @id @default(cuid())
+  roleId       String
+  permissionId String
+  scopeAllDomains Boolean @default(false) // if true, permission applies to all domains
+  role         UserRole   @relation(fields: [roleId], references: [id])
+  permission   Permission @relation(fields: [permissionId], references: [id])
+
+  @@unique([roleId, permissionId]) // one permission per role only once
+}
+
