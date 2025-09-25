@@ -39,12 +39,11 @@ model UserDomain {
   @@unique([userId, domainId])
 }
 
-
 model UserRole {
-  id           String         @id @default(cuid())
-  name         String         @unique
-  description  String?
-  permissions  RolePermission[]
+  id          String           @id @default(cuid())
+  name        String           @unique
+  description String?
+  permissions RolePermission[] @relation("RoleToPermission")
 }
 
 model Permission {
@@ -62,11 +61,11 @@ model Role {
 }
 
 model RolePermission {
-  id           String     @id @default(cuid())
+  id           String      @id @default(cuid())
   roleId       String
   permissionId String
-  role         Role       @relation(fields: [roleId], references: [id])
-  permission   Permission @relation(fields: [permissionId], references: [id])
+  role         UserRole    @relation("RoleToPermission", fields: [roleId], references: [id])
+  permission   Permission  @relation(fields: [permissionId], references: [id])
 }
 
 enum PermissionScope {
