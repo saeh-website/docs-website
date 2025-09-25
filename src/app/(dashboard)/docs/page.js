@@ -18,6 +18,7 @@ export default function DocsPage() {
   const [domains, setDomains] = useState([]);
   const [docs, setDocs] = useState([]);
   const [tab, setTab] = useState("published");
+  const [confirmModal, setConfirmModal] = useState({ show: false, doc: null, action: null });
 
   const user = session?.user;
   const userRole = user?.currentDomain?.userRole?.toLowerCase();
@@ -82,21 +83,26 @@ export default function DocsPage() {
     setShowForm(true);
   };
 
-  const handleSoftDelete = async (doc) => {
-    if (!confirm("هل أنت متأكد من حذف هذا المستند؟")) return;
-    await axios.put(`/api/docs/${doc.id}`, { action: "soft-delete" });
-    fetchDocs(domainId);
+  const openConfirmModal = (doc, action) => {
+    setConfirmModal({ show: true, doc, action });
   };
 
-  const handleRepublish = async (doc) => {
-    await axios.put(`/api/docs/${doc.id}`, { action: "republish" });
-    fetchDocs(domainId);
-  };
+  const closeConfirmModal = () => setConfirmModal({ show: false, doc: null, action: null });
 
-  const handlePermanentDelete = async (doc) => {
-    if (!confirm("هل تريد الحذف النهائي للمستند؟ لا يمكن التراجع!")) return;
-    await axios.put(`/api/docs/${doc.id}`, { action: "permanent-delete" });
-    fetchDocs(domainId);
+  const confirmAction = async () => {
+    if (!confirmModal.doc || !confirmModal.action) return;
+    try {
+      if (confirmModal.action === "soft-delete") {
+        await axios.put(`/api/docs/${confirmModal.doc.id}`, { action: "soft-delete" });
+      } else if (confirmModal.action === "permanent-delete") {
+        await axios.put(`/api/docs/${confirmModal.doc.id}`, { action: "permanent-delete" });
+      }
+      fetchDocs(domainId);
+      closeConfirmModal();
+    } catch (err) {
+      console.error("Delete error:", err);
+      alert("حدث خطأ أثناء تنفيذ العملية");
+    }
   };
 
   const filteredDocs = docs.filter((d) => (tab === "published" ? !d.deleted : d.deleted));
@@ -169,7 +175,7 @@ export default function DocsPage() {
                       <button onClick={() => handleEdit(doc)} className="btn bg-yellow-300 hover:opacity-80 flex items-center">
                         <Edit className="ml-1" /> تعديل
                       </button>
-                      <button onClick={() => handleSoftDelete(doc)} className="btn bg-red-400 hover:opacity-80 flex items-center">
+                      <button onClick={() => openConfirmModal(doc, "soft-delete")} className="btn bg-red-400 hover:opacity-80 flex items-center">
                         <Delete className="ml-1" /> حذف
                       </button>
                     </>
@@ -184,7 +190,7 @@ export default function DocsPage() {
                         إعادة النشر
                       </button>
                       {["superadmin", "doc_admin"].includes(userRole) && (
-                        <button onClick={() => handlePermanentDelete(doc)} className="btn bg-red-600 hover:opacity-80 flex items-center">
+                        <button onClick={() => openConfirmModal(doc, "permanent-delete")} className="btn bg-red-600 hover:opacity-80 flex items-center">
                           حذف نهائي
                         </button>
                       )}
@@ -221,6 +227,20 @@ export default function DocsPage() {
       )}
 
       {showSingleDoc && <SingleDoc doc={showSingleDoc} onClose={() => setShowSingleDoc(null)} />}
+
+      {/* Confirm modal */}
+      {confirmModal.show && (
+        <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex justify-center items-center">
+          <div className="bg-white p-6 rounded w-96 space-y-4">
+            <h2 className="text-lg font-bold">تأكيد العملية</h2>
+            <p>هل أنت متأكد من تنفيذ هذا الإجراء؟</p>
+            <div className="flex justify-end space-x-2 mt-4">
+              <button onClick={closeConfirmModal} className="btn bg-gray-300 text-black hover:opacity-80">إلغاء</button>
+              <button onClick={confirmAction} className="btn bg-red-500 hover:opacity-80 text-white">تأكيد</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
