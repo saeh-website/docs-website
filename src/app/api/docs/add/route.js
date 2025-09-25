@@ -22,7 +22,6 @@ async function createDocHandler(request, { session }) {
 
     return NextResponse.json(doc, { status: 201 });
   } catch (err) {
-    console.error("POST /api/docs/add error:", err);
     return NextResponse.json({ error: err.message || "Error creating doc" }, { status: 500 });
   }
 }

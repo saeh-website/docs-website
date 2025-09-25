@@ -36,7 +36,6 @@ async function updateProfileHandler(request, { session }) {
 
     return NextResponse.json(updatedUser);
   } catch (error) {
-    console.error('Error updating profile:', error);
     return NextResponse.json({ error: 'Error updating profile' }, { status: 500 });
   }
 }

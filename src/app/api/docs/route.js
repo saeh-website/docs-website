@@ -9,11 +9,16 @@ async function getDocsHandler(request, { session }) {
     const url = new URL(request.url);
     const domainId = url.searchParams.get("domainId");
 
+
     if (!domainId) {
       return NextResponse.json({ error: "domainId is required" }, { status: 400 });
     }
 
-    const userRole = session.user.currentDomain.roleName;
+    const userRole = session.user.currentDomain?.roleName;
+    
+    if (!userRole) {
+      return NextResponse.json({ error: "User role not found" }, { status: 400 });
+    }
 
     // Find documents that belong to the specified domain
     // and are visible to the user's role.
@@ -28,7 +33,6 @@ async function getDocsHandler(request, { session }) {
 
     return NextResponse.json(docs);
   } catch (err) {
-    console.error("GET /api/docs error:", err);
     return NextResponse.json(
       { error: err.message || "Error fetching docs" },
       { status: 500 }

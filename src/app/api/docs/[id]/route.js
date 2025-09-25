@@ -67,7 +67,6 @@ async function mainPutHandler(request, { params, session }) {
         return withPermission('doc_update')(updateDocHandler)(request, { params, session });
     }
   } catch (err) {
-    console.error("PUT /api/docs/[id] error:", err);
     return NextResponse.json({ error: err.message || "Error updating doc" }, { status: 500 });
   }
 }

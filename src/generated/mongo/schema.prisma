@@ -1,0 +1,24 @@
+generator client {
+  provider      = "prisma-client-js"
+  output        = "../src/generated/mongo"
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
+}
+
+
+datasource db {
+  provider = "mongodb"
+  url      = env("MONGODB_URL")
+}
+
+model Doc {
+  id             String    @id @map("_id") @default(auto()) @db.ObjectId
+  title          String
+  content        String
+  domainIds      String[]             // Multiple domains
+  visibleToRoles String[]             // Optional: user roles that can see this doc
+  authorId       String
+  deleted        Boolean   @default(false)
+  deletedAt      DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}

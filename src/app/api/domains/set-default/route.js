@@ -19,11 +19,24 @@ async function setDefaultDomainHandler(req, { session }) {
           domainId: domainId,
         },
       },
+      include: {
+        domain: true,
+        userRole: {
+          include: {
+            rolePermissions: {
+              include: {
+                permission: true,
+              },
+            },
+          },
+        },
+      },
     });
 
     if (!userDomain) {
       return NextResponse.json({ error: 'User is not a member of this domain' }, { status: 403 });
     }
+
 
     // Set the user's currentDomainId to the ID of the found UserDomain entry
     const updatedUser = await prismaPostgres.user.update({
@@ -31,11 +44,12 @@ async function setDefaultDomainHandler(req, { session }) {
       data: { currentDomainId: userDomain.id },
     });
 
-    console.log(`Updated user ${userId} currentDomainId to ${userDomain.id} for domain ${domainId}`);
-    
-    return NextResponse.json({ message: 'Default domain updated successfully' })
+    return NextResponse.json({ 
+      message: 'Default domain updated successfully',
+      userDomainId: userDomain.id,
+      domainId: domainId
+    })
   } catch (error) {
-    console.error('Failed to set default domain:', error)
     return NextResponse.json({ error: 'Failed to set default domain' }, { status: 500 })
   }
 }

@@ -69,7 +69,8 @@ export const authOptions = {
   session: { strategy: "jwt", maxAge: 30 * 24 * 60 * 60 },
 
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
+      // Handle initial authentication
       if (user) {
         token.id = user.id;
         token.username = user.username;
@@ -99,10 +100,80 @@ export const authOptions = {
             permissions: permissions,
           };
         } else {
-          token.currentDomain = user.userDomains[0];
+          token.currentDomain = null;
         }
         token.requiresDomainSelection = !token.currentDomain;
       }
+
+      // Handle session updates (like domain changes)
+      if (trigger === "update" && session?.forceRefresh) {
+        // Fetch fresh user data from database
+        const freshUser = await prismaPostgres.user.findUnique({
+          where: { id: token.id },
+          include: {
+            userDomains: {
+              include: {
+                domain: true,
+                userRole: {
+                  include: {
+                    rolePermissions: {
+                      include: {
+                        permission: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            currentDomain: {
+              include: {
+                domain: true,
+                userRole: {
+                  include: {
+                    rolePermissions: {
+                      include: {
+                        permission: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        });
+
+        if (freshUser) {
+          // Update userDomains
+          token.userDomains = freshUser.userDomains.map((ud) => ({
+            id: ud.id,
+            domain: ud.domain,
+            roleName: ud.userRole.name,
+          }));
+
+          // Update current domain
+          const currentDomain = freshUser.currentDomain || freshUser.userDomains[0] || null;
+          
+          if (currentDomain) {
+            const permissions = currentDomain.userRole.rolePermissions.map(
+              (rp) => ({
+                name: rp.permission.name,
+                scopeAllDomains: rp.scopeAllDomains,
+              })
+            );
+            token.currentDomain = {
+              id: currentDomain.id,
+              domain: currentDomain.domain,
+              roleName: currentDomain.userRole.name,
+              permissions: permissions,
+            };
+          } else {
+            token.currentDomain = null;
+          }
+          
+          token.requiresDomainSelection = !token.currentDomain;
+        }
+      }
+
       return token;
     },
     async session({ session, token }) {

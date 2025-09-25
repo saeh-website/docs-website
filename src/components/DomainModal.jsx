@@ -16,6 +16,7 @@ export default function DomainModal({ isOpen, onClose }) {
       setIsLoading(true);
 
       // First, update the backend with the new current domain
+
       const response = await fetch("/api/domains/set-default", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -26,30 +27,16 @@ export default function DomainModal({ isOpen, onClose }) {
         throw new Error("Failed to update current domain");
       }
 
-      // Fetch fresh user data from our custom refresh endpoint
-      const userResponse = await fetch("/api/auth/refresh-user", {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-      });
+      // Trigger NextAuth JWT refresh with new domain data
+      const updateResult = await update({ forceRefresh: true });
 
-      if (!userResponse.ok) {
-        throw new Error("Failed to refresh user data");
+      if (updateResult) {
+        setIsLoading(false);
+        onClose(); // Close the modal
+      } else {
+        throw new Error("Failed to update NextAuth session");
       }
-
-      const refreshedUserData = await userResponse.json();
-
-      console.log("Refreshed user data:", refreshedUserData);
-
-      // Update the session with fresh user data
-      await update({
-        ...session,
-        user: refreshedUserData,
-      });
-
-      setIsLoading(false);
-      onClose(); // Close the modal
     } catch (err) {
-      console.error("Domain selection error:", err);
       setError("Failed to select domain. Please try again.");
       setIsLoading(false);
     }

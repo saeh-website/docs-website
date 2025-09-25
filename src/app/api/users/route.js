@@ -42,7 +42,6 @@ async function getUsersHandler(request, { session }) {
 
     return NextResponse.json(usersWithoutPasswords);
   } catch (error) {
-    console.error('Error fetching users:', error);
     return NextResponse.json({ error: 'Error fetching users' }, { status: 500 });
   }
 }
@@ -103,7 +102,6 @@ async function createUserHandler(request, { session }) {
 
     return NextResponse.json(userWithoutPassword);
   } catch (error) {
-    console.error('Error creating user:', error);
     return NextResponse.json({ error: 'Error creating user' }, { status: 500 });
   }
 }
@@ -147,7 +145,6 @@ async function deleteUserHandler(request, { session }) {
 
     return new NextResponse(null, { status: 204 });
   } catch (error) {
-    console.error('Error deleting user:', error);
     return NextResponse.json({ error: 'Error deleting user' }, { status: 500 });
   }
 }

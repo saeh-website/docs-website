@@ -21,14 +21,14 @@ export default function DocsPage() {
   const [confirmModal, setConfirmModal] = useState({ show: false, doc: null, action: null });
 
   const user = session?.user;
-  const userRole = user?.currentDomain?.userRole?.toLowerCase();
+  const userRole = user?.currentDomain?.roleName?.toLowerCase();
   const isAdmin = ["superadmin", "doc_admin", "site_admin"].includes(userRole);
 
   useEffect(() => {
-    if (user?.currentDomain?.domainId) {
+    if (user?.currentDomain?.domain?.id) {
       setDomains(user.userDomains || []);
-      setDomainId(user.currentDomain.domainId);
-      fetchDocs(user.currentDomain.domainId);
+      setDomainId(user.currentDomain.domain.id);
+      fetchDocs(user.currentDomain.domain.id);
     }
   }, [user]);
 
@@ -38,7 +38,7 @@ export default function DocsPage() {
       const res = await axios.get(`/api/docs?domainId=${domainId}`);
       setDocs(res.data || []);
     } catch (err) {
-      console.error("Fetch docs error:", err);
+      // Handle error silently
     }
   };
 
@@ -53,7 +53,6 @@ export default function DocsPage() {
       fetchDocs(domainId);
       handleClose();
     } catch (err) {
-      console.error("Save error:", err);
       alert("حدث خطأ أثناء حفظ المستند");
     }
   };
@@ -88,7 +87,6 @@ export default function DocsPage() {
       await axios.put(`/api/docs/${doc.id}`, { action: "republish" });
       fetchDocs(domainId);
     } catch (err) {
-      console.error("Republish error:", err);
       alert("حدث خطأ أثناء إعادة نشر المستند");
     }
   };
@@ -110,7 +108,6 @@ export default function DocsPage() {
       fetchDocs(domainId);
       closeConfirmModal();
     } catch (err) {
-      console.error("Delete error:", err);
       alert("حدث خطأ أثناء تنفيذ العملية");
     }
   };

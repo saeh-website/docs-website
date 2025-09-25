@@ -17,7 +17,6 @@ async function getDomainsHandler(request, { session }) {
 
     return NextResponse.json(domains);
   } catch (error) {
-    console.error('Error fetching domains:', error);
     return NextResponse.json({ error: 'Error fetching domains' }, { status: 500 });
   }
 }
@@ -41,7 +40,6 @@ async function createDomainHandler(request, { session }) {
     if (error.code === 'P2002') {
       return NextResponse.json({ error: 'Domain already exists' }, { status: 400 });
     }
-    console.error('Error creating domain:', error);
     return NextResponse.json({ error: 'Error creating domain' }, { status: 500 });
   }
 }
@@ -79,7 +77,6 @@ async function deleteDomainHandler(request, { session }) {
 
     return new NextResponse(null, { status: 204 });
   } catch (error) {
-    console.error('Error deleting domain:', error);
     return NextResponse.json({ error: 'Error deleting domain' }, { status: 500 });
   }
 }

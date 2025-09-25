@@ -21,7 +21,11 @@ export function withPermission(permission) {
 
       const hasPermission = userPermissions.some(p => p.name === permission);
       if (!hasPermission) {
-        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+        return NextResponse.json({ 
+          error: "Forbidden", 
+          details: `Missing permission: ${permission}`,
+          userPermissions: userPermissions.map(p => p.name)
+        }, { status: 403 });
       }
 
       // Pass session to the original handler

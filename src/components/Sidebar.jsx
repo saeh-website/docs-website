@@ -8,8 +8,6 @@ import { useRouter } from "next/navigation";
 import DomainModal from "./DomainModal";
 
 export default function Sidebar({ isOpen, toggle }) {
-  console.log("Sidebar component is rendering");
-
   const { data: session, status } = useSession();
   const router = useRouter();
   const [isDomainModalOpen, setIsDomainModalOpen] = useState(false);
@@ -37,9 +35,6 @@ export default function Sidebar({ isOpen, toggle }) {
   const hasPermission = (permissionName) => {
     return userPermissions.some((p) => p.name === permissionName);
   };
-
-  console.log("Sidebar → user object:", user);
-  console.log("Sidebar → permissions:", userPermissions);
 
   return (
     <>
@@ -77,7 +72,7 @@ export default function Sidebar({ isOpen, toggle }) {
           {/* Current domain */}
           <div className="mb-4">
             <p className="text-sm">
-              النطاق الحالي: {user.currentDomain?.domain?.name}
+              النطاق الحالي: {user.currentDomain?.domain?.name || "غير محدد"}
             </p>
             <button
               onClick={() => setIsDomainModalOpen(true)}
