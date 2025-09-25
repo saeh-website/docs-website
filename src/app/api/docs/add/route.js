@@ -1,6 +1,6 @@
-import { prismaMongo } from "../../../lib/prismaMongo";
+import { prismaMongo } from "../../../../lib/prismaMongo";
 import { NextResponse } from "next/server";
-import { withPermission } from "../../../lib/permission_handler";
+import { withPermission } from "../../../../lib/permission_handler";
 
 async function createDocHandler(request, { session }) {
   try {
