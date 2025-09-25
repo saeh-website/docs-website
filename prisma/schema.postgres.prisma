@@ -54,19 +54,20 @@ model Permission {
 }
 
 model Role {
-  id             String           @id @default(cuid())
-  name           String           @unique
-  description    String?
-  rolePermissions RolePermission[]
+  id              String           @id @default(cuid())
+  name            String           @unique
+  description     String?
+  rolePermissions RolePermission[] @relation("RoleToPermission")
 }
 
 model RolePermission {
-  id           String      @id @default(cuid())
-  roleId       String
+  id        String   @id @default(cuid())
+  roleId    String
   permissionId String
-  role         UserRole    @relation("RoleToPermission", fields: [roleId], references: [id])
-  permission   Permission  @relation(fields: [permissionId], references: [id])
+  role      Role     @relation("RoleToPermission", fields: [roleId], references: [id])
+  permission Permission @relation(fields: [permissionId], references: [id])
 }
+
 
 enum PermissionScope {
   ALL_DOMAINS
