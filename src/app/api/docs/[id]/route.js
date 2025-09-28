@@ -2,13 +2,22 @@ import { prismaMongo } from "@/lib/prismaMongo";
 import { NextResponse } from "next/server";
 import { withPermission } from "@/lib/permission_handler";
 
-// Handler for updating a document
-async function updateDocHandler(request, { params, session }) {
+// Update
+async function updateDocHandler(request, { params }) {
   const { id } = params;
   const { title, content, domainIds, visibleToRoles } = await request.json();
 
-  if (!title || !content || !domainIds || !visibleToRoles) {
-    return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+  if (
+    !title ||
+    !content ||
+    !Array.isArray(domainIds) ||
+    domainIds.length === 0 ||
+    !Array.isArray(visibleToRoles)
+  ) {
+    return NextResponse.json(
+      { error: "Missing or invalid fields" },
+      { status: 400 }
+    );
   }
 
   const updatedDoc = await prismaMongo.doc.update({
@@ -19,8 +28,8 @@ async function updateDocHandler(request, { params, session }) {
   return NextResponse.json(updatedDoc);
 }
 
-// Handler for soft-deleting a document
-async function softDeleteDocHandler(request, { params, session }) {
+// Soft delete
+async function softDeleteDocHandler(_, { params }) {
   const { id } = params;
   const updated = await prismaMongo.doc.update({
     where: { id },
@@ -29,8 +38,8 @@ async function softDeleteDocHandler(request, { params, session }) {
   return NextResponse.json(updated);
 }
 
-// Handler for restoring a soft-deleted document
-async function restoreDocHandler(request, { params, session }) {
+// Restore
+async function restoreDocHandler(_, { params }) {
   const { id } = params;
   const updated = await prismaMongo.doc.update({
     where: { id },
@@ -39,38 +48,47 @@ async function restoreDocHandler(request, { params, session }) {
   return NextResponse.json(updated);
 }
 
-// Handler for permanently deleting a document
-async function permanentDeleteDocHandler(request, { params, session }) {
+// Permanent delete
+async function permanentDeleteDocHandler(_, { params }) {
   const { id } = params;
   await prismaMongo.doc.delete({ where: { id } });
   return NextResponse.json({ message: "Deleted permanently" });
 }
 
-// Main PUT handler that routes based on the 'action' body parameter
+// Main PUT
 async function mainPutHandler(request, { params, session }) {
   try {
-    const body = await request.json();
-    const { action } = body;
+    const { action } = await request.json();
 
     switch (action) {
-      case 'soft-delete':
-        // Re-wrap the specific handler with its required permission
-        return withPermission('doc_delete')(softDeleteDocHandler)(request, { params, session });
-      case 'restore':
-        // Assuming restore uses the same permission as update
-        return withPermission('doc_update')(restoreDocHandler)(request, { params, session });
-      case 'permanent-delete':
-        // A more sensitive action, could have its own permission if needed
-        return withPermission('doc_delete')(permanentDeleteDocHandler)(request, { params, session });
+      case "soft-delete":
+        return withPermission("doc_delete")(softDeleteDocHandler)(request, {
+          params,
+          session,
+        });
+      case "restore":
+        return withPermission("doc_update")(restoreDocHandler)(request, {
+          params,
+          session,
+        });
+      case "permanent-delete":
+        return withPermission("doc_delete")(permanentDeleteDocHandler)(request, {
+          params,
+          session,
+        });
       default:
-        // Default action is a regular update
-        return withPermission('doc_update')(updateDocHandler)(request, { params, session });
+        return withPermission("doc_update")(updateDocHandler)(request, {
+          params,
+          session,
+        });
     }
   } catch (err) {
-    return NextResponse.json({ error: err.message || "Error updating doc" }, { status: 500 });
+    console.error("PUT /api/docs/[id] error:", err);
+    return NextResponse.json(
+      { error: err.message || "Error updating doc" },
+      { status: 500 }
+    );
   }
 }
 
-// Export the main handler for the PUT method.
-// A base 'doc_update' permission is checked first. Specific actions inside might check for more permissions.
-export const PUT = withPermission('doc_update')(mainPutHandler);
+export const PUT = withPermission("doc_update")(mainPutHandler);

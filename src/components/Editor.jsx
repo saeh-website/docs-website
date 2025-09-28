@@ -3,7 +3,7 @@
 import dynamic from 'next/dynamic';
 import { useState, useEffect } from 'react';
 
-// Dynamically import ReactQuill to prevent SSR issues
+// Dynamically import ReactQuill
 const ReactQuill = dynamic(() => import('react-quill'), {
   ssr: false,
   loading: () => <div>Loading editor...</div>,
@@ -19,8 +19,11 @@ export default function Editor({
   currentUserDomains = [],
   title,
   setTitle,
-  domainId,
-  setDomainId,
+  domainIds = [],
+  setDomainIds,
+  visibleToRoles = [],
+  setVisibleToRoles,
+  availableRoles = [],
 }) {
   const [content, setContent] = useState(value || '');
 
@@ -33,42 +36,57 @@ export default function Editor({
     onChange?.(newContent);
   };
 
-  // Filter domains based on user role
-  const availableDomains = domains.filter((d) => {
-    if (['superadmin', 'doc_admin'].includes(currentUserRole)) return true;
-    if (currentUserRole === 'site_admin') {
-      return currentUserDomains?.some(
-        (ud) => ud.domainId === d.domainId && ud.userRole === 'site_admin'
-      );
+  const handleDomainToggle = (domainId) => {
+    if (domainIds.includes(domainId)) {
+      setDomainIds(domainIds.filter((id) => id !== domainId));
+    } else {
+      setDomainIds([...domainIds, domainId]);
     }
-    return false;
-  });
+  };
+
+  const handleRoleToggle = (role) => {
+    if (visibleToRoles.includes(role)) {
+      setVisibleToRoles(visibleToRoles.filter((r) => r !== role));
+    } else {
+      setVisibleToRoles([...visibleToRoles, role]);
+    }
+  };
 
   return (
     <div style={{ direction: 'rtl' }}>
-      {/* Domain Select */}
+      {/* Domains checkboxes */}
       <div className="form-group">
-        <label>المجال:</label>
-        <select
-          name="domainId"
-          className="form-control"
-          required
-          value={domainId}
-          onChange={(e) => setDomainId(e.target.value)}
-        >
-          <option value="">اختر مجال</option>
-          {availableDomains.map((d) => (
-            <option key={d.domainId} value={d.domainId}>
-              {d.domainName}
-            </option>
-          ))}
-        </select>
-        {availableDomains.length === 0 && (
-          <small className="text-red-600">لا توجد مجالات متاحة للإضافة</small>
-        )}
+        <label>المجالات:</label>
+        {domains.map((d) => (
+          <div key={d.domainId} className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id={`domain-${d.domainId}`}
+              checked={domainIds.includes(d.domainId)}
+              onChange={() => handleDomainToggle(d.domainId)}
+            />
+            <label htmlFor={`domain-${d.domainId}`}>{d.domainName}</label>
+          </div>
+        ))}
       </div>
 
-      {/* Title Input */}
+      {/* Visible roles checkboxes */}
+      <div className="form-group mt-3">
+        <label>الأدوار المسموح لها:</label>
+        {availableRoles.map((role) => (
+          <div key={role} className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id={`role-${role}`}
+              checked={visibleToRoles.includes(role)}
+              onChange={() => handleRoleToggle(role)}
+            />
+            <label htmlFor={`role-${role}`}>{role}</label>
+          </div>
+        ))}
+      </div>
+
+      {/* Title input */}
       <div className="form-group mt-3">
         <label>العنوان:</label>
         <input
@@ -82,7 +100,7 @@ export default function Editor({
         />
       </div>
 
-      {/* Content Editor */}
+      {/* Content editor */}
       <div className="form-group mt-3">
         <label>المحتوى:</label>
         <ReactQuill
