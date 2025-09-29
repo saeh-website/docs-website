@@ -15,7 +15,11 @@ export default function DocsPage() {
   const [showSingleDoc, setShowSingleDoc] = useState(null);
   const [editingDoc, setEditingDoc] = useState(null);
   const [tab, setTab] = useState("published");
-  const [confirmModal, setConfirmModal] = useState({ show: false, doc: null, action: null });
+  const [confirmModal, setConfirmModal] = useState({
+    show: false,
+    doc: null,
+    action: null,
+  });
 
   // Form state
   const [title, setTitle] = useState("");
@@ -162,6 +166,30 @@ export default function DocsPage() {
       )}
 
       <h1 className="text-3xl font-bold mb-4 text-center">المستندات</h1>
+
+      {/* Debug: show raw data */}
+      <div className="bg-gray-100 border p-2 my-4 text-xs overflow-x-auto">
+        <strong>Domains (raw):</strong>
+        <pre>{JSON.stringify(domains, null, 2)}</pre>
+
+        <strong>Docs (raw):</strong>
+        <pre>{JSON.stringify(docs, null, 2)}</pre>
+      </div>
+
+      {/* Debugging info */}
+      <div className="bg-yellow-100 border border-yellow-400 p-2 my-2 text-xs overflow-x-auto">
+        <strong>Domains prop:</strong>
+        <pre>{JSON.stringify(domains, null, 2)}</pre>
+
+        <strong>AvailableRoles prop:</strong>
+        <pre>{JSON.stringify(availableRoles, null, 2)}</pre>
+
+        <strong>Current domainIds:</strong>
+        <pre>{JSON.stringify(domainIds, null, 2)}</pre>
+
+        <strong>VisibleToRoles:</strong>
+        <pre>{JSON.stringify(visibleToRoles, null, 2)}</pre>
+      </div>
 
       {/* Domain select */}
       <div className="flex justify-center mb-4 space-x-4">
