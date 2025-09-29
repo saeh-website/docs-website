@@ -44,11 +44,11 @@ export default function Editor({
     }
   };
 
-  const handleRoleToggle = (role) => {
-    if (visibleToRoles.includes(role)) {
-      setVisibleToRoles(visibleToRoles.filter((r) => r !== role));
+  const handleRoleToggle = (roleName) => {
+    if (visibleToRoles.includes(roleName)) {
+      setVisibleToRoles(visibleToRoles.filter((r) => r !== roleName));
     } else {
-      setVisibleToRoles([...visibleToRoles, role]);
+      setVisibleToRoles([...visibleToRoles, roleName]);
     }
   };
 
@@ -57,33 +57,41 @@ export default function Editor({
       {/* Domains checkboxes */}
       <div className="form-group">
         <label>المجالات:</label>
-        {domains.map((d) => (
-          <div key={d.domainId} className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id={`domain-${d.domainId}`}
-              checked={domainIds.includes(d.domainId)}
-              onChange={() => handleDomainToggle(d.domainId)}
-            />
-            <label htmlFor={`domain-${d.domainId}`}>{d.domainName}</label>
-          </div>
-        ))}
+        {domains.length > 0 ? (
+          domains.map((d) => (
+            <div key={d.id} className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id={`domain-${d.id}`}
+                checked={domainIds.includes(d.id)}
+                onChange={() => handleDomainToggle(d.id)}
+              />
+              <label htmlFor={`domain-${d.id}`}>{d.name}</label>
+            </div>
+          ))
+        ) : (
+          <small className="text-red-600">لا توجد مجالات متاحة</small>
+        )}
       </div>
 
       {/* Visible roles checkboxes */}
       <div className="form-group mt-3">
-        <label>الأدوار المسموح لها:</label>
-        {availableRoles.map((role) => (
-          <div key={role} className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id={`role-${role}`}
-              checked={visibleToRoles.includes(role)}
-              onChange={() => handleRoleToggle(role)}
-            />
-            <label htmlFor={`role-${role}`}>{role}</label>
-          </div>
-        ))}
+        <label>الأدوار:</label>
+        {availableRoles.length > 0 ? (
+          availableRoles.map((role) => (
+            <div key={role.id} className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id={`role-${role.id}`}
+                checked={visibleToRoles.includes(role.name)}
+                onChange={() => handleRoleToggle(role.name)}
+              />
+              <label htmlFor={`role-${role.id}`}>{role.name}</label>
+            </div>
+          ))
+        ) : (
+          <small className="text-red-600">لا توجد أدوار متاحة</small>
+        )}
       </div>
 
       {/* Title input */}
