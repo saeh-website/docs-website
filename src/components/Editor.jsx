@@ -1,22 +1,15 @@
-'use client';
+"use client";
 
-import dynamic from 'next/dynamic';
-import { useState, useEffect } from 'react';
+import dynamic from "next/dynamic";
+import { useState, useEffect } from "react";
 
-// Dynamically import ReactQuill
-const ReactQuill = dynamic(() => import('react-quill'), {
-  ssr: false,
-  loading: () => <div>Loading editor...</div>,
-});
-
-import 'react-quill/dist/quill.snow.css';
+const ReactQuill = dynamic(() => import("react-quill"), { ssr: false });
+import "react-quill/dist/quill.snow.css";
 
 export default function Editor({
   value,
   onChange,
   domains = [],
-  currentUserRole = '',
-  currentUserDomains = [],
   title,
   setTitle,
   domainIds = [],
@@ -25,10 +18,10 @@ export default function Editor({
   setVisibleToRoles,
   availableRoles = [],
 }) {
-  const [content, setContent] = useState(value || '');
+  const [content, setContent] = useState(value || "");
 
   useEffect(() => {
-    setContent(value || '');
+    setContent(value || "");
   }, [value]);
 
   const handleContentChange = (newContent) => {
@@ -36,46 +29,45 @@ export default function Editor({
     onChange?.(newContent);
   };
 
-  const handleDomainToggle = (domainId) => {
-    if (domainIds.includes(domainId)) {
-      setDomainIds(domainIds.filter((id) => id !== domainId));
+  const handleDomainToggle = (id) => {
+    if (domainIds.includes(id)) {
+      setDomainIds(domainIds.filter((d) => d !== id));
     } else {
-      setDomainIds([...domainIds, domainId]);
+      setDomainIds([...domainIds, id]);
     }
   };
 
-  const handleRoleToggle = (roleName) => {
-    if (visibleToRoles.includes(roleName)) {
-      setVisibleToRoles(visibleToRoles.filter((r) => r !== roleName));
+  const handleRoleToggle = (id) => {
+    if (visibleToRoles.includes(id)) {
+      setVisibleToRoles(visibleToRoles.filter((r) => r !== id));
     } else {
-      setVisibleToRoles([...visibleToRoles, roleName]);
+      setVisibleToRoles([...visibleToRoles, id]);
     }
   };
 
   return (
-    <div style={{ direction: 'rtl' }}>
+    <div style={{ direction: "rtl" }}>
       {/* Domains checkboxes */}
       <div className="form-group">
         <label>المجالات:</label>
         {domains.length > 0 ? (
-          domains.map((d,idx) => {
-            const domainKey = d.id || d.name || idx;
-            return (<div key={domainKey} className="flex items-center gap-2">
+          domains.map((d) => (
+            <div key={d.id} className="flex items-center gap-2">
               <input
                 type="checkbox"
-                id={`domain-${domainKey}`}
-                checked={domainIds.includes(domainKey)}
-                onChange={() => handleDomainToggle(domainKey)}
+                id={`domain-${d.id}`}
+                checked={domainIds.includes(d.id)}
+                onChange={() => handleDomainToggle(d.id)}
               />
-              <label htmlFor={`domain-${domainKey}`}>{d.name}</label>
-            </div>);
-          })
+              <label htmlFor={`domain-${d.id}`}>{d.name}</label>
+            </div>
+          ))
         ) : (
           <small className="text-red-600">لا توجد مجالات متاحة</small>
         )}
       </div>
 
-      {/* Visible roles checkboxes */}
+      {/* Roles checkboxes */}
       <div className="form-group mt-3">
         <label>الأدوار:</label>
         {availableRoles.length > 0 ? (
@@ -84,8 +76,8 @@ export default function Editor({
               <input
                 type="checkbox"
                 id={`role-${role.id}`}
-                checked={visibleToRoles.includes(role.name)}
-                onChange={() => handleRoleToggle(role.name)}
+                checked={visibleToRoles.includes(role.id)}
+                onChange={() => handleRoleToggle(role.id)}
               />
               <label htmlFor={`role-${role.id}`}>{role.name}</label>
             </div>
@@ -95,12 +87,11 @@ export default function Editor({
         )}
       </div>
 
-      {/* Title input */}
+      {/* Title */}
       <div className="form-group mt-3">
         <label>العنوان:</label>
         <input
           type="text"
-          name="title"
           className="form-control"
           placeholder="أدخل عنوان المستند"
           required
@@ -109,35 +100,23 @@ export default function Editor({
         />
       </div>
 
-      {/* Content editor */}
+      {/* Content */}
       <div className="form-group mt-3">
         <label>المحتوى:</label>
         <ReactQuill
           value={content}
           onChange={handleContentChange}
           theme="snow"
-          style={{ direction: 'rtl', textAlign: 'right', minHeight: '200px' }}
+          style={{ direction: "rtl", textAlign: "right", minHeight: "200px" }}
           modules={{
             toolbar: [
-              [{ header: '1' }, { header: '2' }, { font: [] }],
-              [{ list: 'ordered' }, { list: 'bullet' }],
-              ['bold', 'italic', 'underline', 'strike'],
-              ['link', 'image'],
-              ['clean'],
+              [{ header: "1" }, { header: "2" }, { font: [] }],
+              [{ list: "ordered" }, { list: "bullet" }],
+              ["bold", "italic", "underline", "strike"],
+              ["link", "image"],
+              ["clean"],
             ],
           }}
-          formats={[
-            'header',
-            'font',
-            'list',
-            'bullet',
-            'bold',
-            'italic',
-            'underline',
-            'strike',
-            'link',
-            'image',
-          ]}
         />
       </div>
     </div>

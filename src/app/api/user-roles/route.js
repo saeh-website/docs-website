@@ -3,15 +3,16 @@ import { prismaPostgres } from "@/lib/prismaPostgres";
 import { withPermission } from "@/lib/permission_handler";
 
 /**
- * Helper to format roles consistently for frontend
+ * Format role consistently for frontend
+ * Always guarantees: { id: string, name: string, description, permissions[], assignedUsersCount }
  */
 function formatRole(role) {
   return {
-    id: role.id,
+    id: String(role.id), // normalize to string
     name: role.name,
-    description: role.description,
-    permissions: role.rolePermissions.map((rp) => ({
-      id: rp.permission.id,
+    description: role.description || "",
+    permissions: (role.rolePermissions || []).map((rp) => ({
+      id: String(rp.permission.id),
       name: rp.permission.name,
       scopeAllDomains: rp.scopeAllDomains,
     })),
@@ -32,13 +33,11 @@ async function getUserRolesHandler() {
       orderBy: { name: "asc" },
     });
 
+    // Guarantee { id, name } at minimum
     return NextResponse.json(roles.map(formatRole));
   } catch (error) {
     console.error("Error fetching user roles:", error);
-    return NextResponse.json(
-      { error: "Error fetching user roles" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Error fetching user roles" }, { status: 500 });
   }
 }
 
@@ -50,19 +49,13 @@ async function createUserRoleHandler(request) {
     const { name, description, permissions } = await request.json();
 
     if (!name) {
-      return NextResponse.json(
-        { error: "Role name is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Role name is required" }, { status: 400 });
     }
 
-    // Check for duplicate
+    // Prevent duplicate role name
     const existing = await prismaPostgres.userRole.findUnique({ where: { name } });
     if (existing) {
-      return NextResponse.json(
-        { error: "Role name already exists" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Role name already exists" }, { status: 400 });
     }
 
     const created = await prismaPostgres.userRole.create({
@@ -85,10 +78,7 @@ async function createUserRoleHandler(request) {
     return NextResponse.json(formatRole(created));
   } catch (error) {
     console.error("Error creating user role:", error);
-    return NextResponse.json(
-      { error: "Error creating user role" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Error creating user role" }, { status: 500 });
   }
 }
 
@@ -107,24 +97,19 @@ async function updateUserRoleHandler(request) {
       return NextResponse.json({ error: "Role not found" }, { status: 404 });
     }
 
-    // Name conflict check
+    // Prevent name conflict
     if (name && name !== existing.name) {
       const conflict = await prismaPostgres.userRole.findUnique({ where: { name } });
       if (conflict) {
-        return NextResponse.json(
-          { error: "Another role with this name already exists" },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: "Another role with this name already exists" }, { status: 400 });
       }
     }
 
-    // Base update
     const updateData = {
       name: name || existing.name,
       description: description !== undefined ? description : existing.description,
     };
 
-    // Update permissions if provided
     if (Array.isArray(permissions)) {
       await prismaPostgres.rolePermission.deleteMany({ where: { roleId: id } });
       updateData.rolePermissions = {
@@ -147,10 +132,7 @@ async function updateUserRoleHandler(request) {
     return NextResponse.json(formatRole(updated));
   } catch (error) {
     console.error("Error updating user role:", error);
-    return NextResponse.json(
-      { error: "Error updating user role" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Error updating user role" }, { status: 500 });
   }
 }
 
@@ -186,10 +168,7 @@ async function deleteUserRoleHandler(request) {
     return NextResponse.json({ message: "Role deleted successfully" });
   } catch (error) {
     console.error("Error deleting user role:", error);
-    return NextResponse.json(
-      { error: "Error deleting user role" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Error deleting user role" }, { status: 500 });
   }
 }
 
