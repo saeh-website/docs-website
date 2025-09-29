@@ -58,17 +58,18 @@ export default function Editor({
       <div className="form-group">
         <label>المجالات:</label>
         {domains.length > 0 ? (
-          domains.map((d) => (
-            <div key={d.id} className="flex items-center gap-2">
+          domains.map((d,idx) => {
+            const domainKey = d.id || d.name || idx;
+            return (<div key={domainKey} className="flex items-center gap-2">
               <input
                 type="checkbox"
-                id={`domain-${d.id}`}
-                checked={domainIds.includes(d.id)}
-                onChange={() => handleDomainToggle(d.id)}
+                id={`domain-${domainKey}`}
+                checked={domainIds.includes(domainKey)}
+                onChange={() => handleDomainToggle(domainKey)}
               />
-              <label htmlFor={`domain-${d.id}`}>{d.domainName}</label>
-            </div>
-          ))
+              <label htmlFor={`domain-${domainKey}`}>{d.name}</label>
+            </div>);
+          })
         ) : (
           <small className="text-red-600">لا توجد مجالات متاحة</small>
         )}

@@ -31,6 +31,7 @@ export default function DocsPage() {
   const [domains, setDomains] = useState([]);
   const [availableRoles, setAvailableRoles] = useState([]);
   const [docs, setDocs] = useState([]);
+  const [roles, setRoles] = useState([]);
 
   const user = session?.user;
   const userRole = user?.currentDomain?.roleName?.toLowerCase();
@@ -61,6 +62,19 @@ export default function DocsPage() {
         console.error("Error fetching roles", err);
       }
     };
+    fetchRoles();
+  }, []);
+
+  useEffect(() => {
+    async function fetchRoles() {
+      try {
+        const res = await axios.get("/api/user-roles");
+        setRoles(res.data || []);
+      } catch (err) {
+        console.error("Failed to fetch roles", err);
+      }
+    }
+
     fetchRoles();
   }, []);
 
@@ -330,11 +344,11 @@ export default function DocsPage() {
               currentUserDomains={user.userDomains}
               title={title}
               setTitle={setTitle}
-              domainIds={domainIds}
-              setDomainIds={setDomainIds}
+              domainIds={domainId ? [domainId] : []}
+              setDomainIds={(ids) => setDomainId(ids[0] || "")}
               visibleToRoles={visibleToRoles}
               setVisibleToRoles={setVisibleToRoles}
-              availableRoles={availableRoles}
+              availableRoles={roles.map((r) => r.name)} // map to names
             />
             <div className="flex justify-end space-x-2 mt-4">
               <button
