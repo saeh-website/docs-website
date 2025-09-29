@@ -1,7 +1,6 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useState, useEffect } from "react";
 
 const ReactQuill = dynamic(() => import("react-quill"), { ssr: false });
 import "react-quill/dist/quill.snow.css";
@@ -18,33 +17,20 @@ export default function Editor({
   setVisibleToRoles,
   availableRoles = [],
 }) {
-  const [content, setContent] = useState(value || "");
-
-  useEffect(() => {
-    setContent(value || "");
-  }, [value]);
-
-  const handleContentChange = (newContent) => {
-    setContent(newContent);
-    onChange?.(newContent);
-  };
-
+  // Toggle domain
   const handleDomainToggle = (id) => {
     const stringId = String(id);
-    if (domainIds.includes(stringId)) {
-      setDomainIds(domainIds.filter((d) => d !== stringId));
-    } else {
-      setDomainIds([...domainIds, stringId]);
-    }
+    setDomainIds((prev) =>
+      prev.includes(stringId) ? prev.filter((d) => d !== stringId) : [...prev, stringId]
+    );
   };
 
+  // Toggle role
   const handleRoleToggle = (id) => {
     const stringId = String(id);
-    if (visibleToRoles.includes(stringId)) {
-      setVisibleToRoles(visibleToRoles.filter((r) => r !== stringId));
-    } else {
-      setVisibleToRoles([...visibleToRoles, stringId]);
-    }
+    setVisibleToRoles((prev) =>
+      prev.includes(stringId) ? prev.filter((r) => r !== stringId) : [...prev, stringId]
+    );
   };
 
   return (
@@ -58,7 +44,6 @@ export default function Editor({
               <input
                 type="checkbox"
                 id={`domain-${d.id}`}
-                value={d.id}
                 checked={domainIds.includes(String(d.id))}
                 onChange={() => handleDomainToggle(d.id)}
               />
@@ -79,7 +64,6 @@ export default function Editor({
               <input
                 type="checkbox"
                 id={`role-${role.id}`}
-                value={role.id}
                 checked={visibleToRoles.includes(String(role.id))}
                 onChange={() => handleRoleToggle(role.id)}
               />
@@ -108,8 +92,8 @@ export default function Editor({
       <div className="form-group mt-3">
         <label>المحتوى:</label>
         <ReactQuill
-          value={content}
-          onChange={handleContentChange}
+          value={value}
+          onChange={onChange}
           theme="snow"
           style={{ direction: "rtl", textAlign: "right", minHeight: "200px" }}
           modules={{

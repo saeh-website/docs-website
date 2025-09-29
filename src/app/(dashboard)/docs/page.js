@@ -20,8 +20,11 @@ export default function DocsPage() {
   // Form state
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
-  const [domainIds, setDomainIds] = useState([]);
+  const [selectedDomainIds, setSelectedDomainIds] = useState([]);
   const [visibleToRoles, setVisibleToRoles] = useState([]);
+
+  // Filter state
+  const [filterDomainId, setFilterDomainId] = useState("");
 
   // Data
   const [domains, setDomains] = useState([]);
@@ -32,7 +35,7 @@ export default function DocsPage() {
   const userRole = user?.currentDomain?.roleName?.toLowerCase();
   const isAdmin = ["superadmin", "doc_admin", "site_admin"].includes(userRole);
 
-  // Load domains
+  // Load domains from user
   useEffect(() => {
     if (user?.userDomains) {
       const mapped = user.userDomains.map((ud) => ({
@@ -43,7 +46,7 @@ export default function DocsPage() {
 
       if (user.currentDomain?.domain?.id) {
         const currentId = String(user.currentDomain.domain.id);
-        setDomainIds([currentId]);
+        setFilterDomainId(currentId);
         fetchDocs(currentId);
       }
     }
@@ -67,19 +70,19 @@ export default function DocsPage() {
   }, []);
 
   // Fetch docs
-  const fetchDocs = async (selectedDomainId) => {
-    if (!selectedDomainId) return;
+  const fetchDocs = async (domainId) => {
+    if (!domainId) return;
     try {
-      const res = await axios.get(`/api/docs?domainId=${selectedDomainId}`);
+      const res = await axios.get(`/api/docs?domainId=${domainId}`);
       setDocs(res.data || []);
     } catch (err) {
       console.error("Error fetching docs", err);
     }
   };
 
-  // Save
+  // Save (add or update)
   const handleSave = async () => {
-    if (!title || !content || domainIds.length === 0) {
+    if (!title || !content || selectedDomainIds.length === 0) {
       return alert("الرجاء تعبئة جميع الحقول");
     }
     try {
@@ -87,18 +90,18 @@ export default function DocsPage() {
         await axios.put(`/api/docs/${editingDoc.id}`, {
           title,
           content,
-          domainIds,
+          domainIds: selectedDomainIds,
           visibleToRoles,
         });
       } else {
         await axios.post("/api/docs/add", {
           title,
           content,
-          domainIds,
+          domainIds: selectedDomainIds,
           visibleToRoles,
         });
       }
-      if (domainIds.length > 0) fetchDocs(domainIds[0]);
+      if (filterDomainId) fetchDocs(filterDomainId);
       handleClose();
     } catch (err) {
       console.error("Save error:", err);
@@ -106,14 +109,21 @@ export default function DocsPage() {
     }
   };
 
-  const handleAddClick = () => setShowForm(true);
+  const handleAddClick = () => {
+    resetForm();
+    setShowForm(true);
+  };
 
   const handleClose = () => {
     setShowForm(false);
+    resetForm();
+  };
+
+  const resetForm = () => {
     setEditingDoc(null);
     setTitle("");
     setContent("");
-    setDomainIds([]);
+    setSelectedDomainIds([]);
     setVisibleToRoles([]);
   };
 
@@ -121,7 +131,7 @@ export default function DocsPage() {
     setEditingDoc(doc);
     setTitle(doc.title);
     setContent(doc.content);
-    setDomainIds((doc.domainIds || []).map(String));
+    setSelectedDomainIds((doc.domainIds || []).map(String));
     setVisibleToRoles((doc.visibleToRoles || []).map(String));
     setShowForm(true);
   };
@@ -129,7 +139,7 @@ export default function DocsPage() {
   const handleRepublish = async (doc) => {
     try {
       await axios.put(`/api/docs/${doc.id}`, { action: "restore" });
-      if (domainIds.length > 0) fetchDocs(domainIds[0]);
+      if (filterDomainId) fetchDocs(filterDomainId);
     } catch {
       alert("حدث خطأ أثناء إعادة نشر المستند");
     }
@@ -142,7 +152,7 @@ export default function DocsPage() {
     if (!confirmModal.doc || !confirmModal.action) return;
     try {
       await axios.put(`/api/docs/${confirmModal.doc.id}`, { action: confirmModal.action });
-      if (domainIds.length > 0) fetchDocs(domainIds[0]);
+      if (filterDomainId) fetchDocs(filterDomainId);
       closeConfirmModal();
     } catch {
       alert("حدث خطأ أثناء تنفيذ العملية");
@@ -166,19 +176,23 @@ export default function DocsPage() {
       {/* Debug panel */}
       <div className="bg-gray-100 border p-2 my-4 text-xs overflow-x-auto">
         <pre>
-          {JSON.stringify({ domains, availableRoles, domainIds, visibleToRoles }, null, 2)}
+          {JSON.stringify(
+            { filterDomainId, selectedDomainIds, visibleToRoles, availableRoles },
+            null,
+            2
+          )}
         </pre>
       </div>
 
       {/* Domain select */}
       <div className="flex justify-center mb-4 space-x-4">
         <select
-          value={domainIds[0] || ""}
+          value={filterDomainId}
           onChange={(e) => {
-            const selectedId = e.target.value;
-            setDomainIds(selectedId ? [selectedId] : []);
+            const id = e.target.value;
+            setFilterDomainId(id);
             setDocs([]);
-            if (selectedId) fetchDocs(selectedId);
+            if (id) fetchDocs(id);
           }}
           className="form-control w-1/2"
         >
@@ -271,8 +285,8 @@ export default function DocsPage() {
               domains={domains}
               title={title}
               setTitle={setTitle}
-              domainIds={domainIds}
-              setDomainIds={setDomainIds}
+              domainIds={selectedDomainIds}
+              setDomainIds={setSelectedDomainIds}
               visibleToRoles={visibleToRoles}
               setVisibleToRoles={setVisibleToRoles}
               availableRoles={availableRoles}
