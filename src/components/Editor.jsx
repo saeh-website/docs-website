@@ -66,7 +66,7 @@ export default function Editor({
                 checked={domainIds.includes(d.id)}
                 onChange={() => handleDomainToggle(d.id)}
               />
-              <label htmlFor={`domain-${d.id}`}>{d.name}</label>
+              <label htmlFor={`domain-${d.id}`}>{d.domainName}</label>
             </div>
           ))
         ) : (

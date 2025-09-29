@@ -9,59 +9,94 @@ import SingleDoc from "@/components/SingleDoc";
 
 export default function DocsPage() {
   const { data: session } = useSession();
+
+  // UI state
   const [showForm, setShowForm] = useState(false);
   const [showSingleDoc, setShowSingleDoc] = useState(null);
   const [editingDoc, setEditingDoc] = useState(null);
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
-  const [domainId, setDomainId] = useState("");
-  const [domains, setDomains] = useState([]);
-  const [docs, setDocs] = useState([]);
   const [tab, setTab] = useState("published");
   const [confirmModal, setConfirmModal] = useState({ show: false, doc: null, action: null });
+
+  // Form state
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
+  const [domainIds, setDomainIds] = useState([]);
+  const [visibleToRoles, setVisibleToRoles] = useState([]);
+
+  // Data
+  const [domains, setDomains] = useState([]);
+  const [availableRoles, setAvailableRoles] = useState([]);
+  const [docs, setDocs] = useState([]);
 
   const user = session?.user;
   const userRole = user?.currentDomain?.roleName?.toLowerCase();
   const isAdmin = ["superadmin", "doc_admin", "site_admin"].includes(userRole);
 
+  // Load domains from user
   useEffect(() => {
-    if (user?.currentDomain?.domain?.id) {
-      setDomains(user.userDomains || []);
-      setDomainId(user.currentDomain.domain.id);
-      fetchDocs(user.currentDomain.domain.id);
+    if (user?.userDomains) {
+      const mapped = user.userDomains.map((ud) => ({
+        id: ud.domainId,
+        name: ud.domain?.name || ud.domainName || ud.domainId,
+      }));
+      setDomains(mapped);
+      if (user.currentDomain?.domain?.id) {
+        setDomainIds([user.currentDomain.domain.id]);
+        fetchDocs(user.currentDomain.domain.id);
+      }
     }
   }, [user]);
 
+  // Load available roles
+  useEffect(() => {
+    const fetchRoles = async () => {
+      try {
+        const res = await axios.get("/api/roles"); // Must be implemented
+        setAvailableRoles(res.data.map((r) => r.name));
+      } catch (err) {
+        console.error("Error fetching roles", err);
+      }
+    };
+    fetchRoles();
+  }, []);
+
+  // Fetch docs for selected domain(s)
   const fetchDocs = async (domainId) => {
     if (!domainId) return;
     try {
       const res = await axios.get(`/api/docs?domainId=${domainId}`);
       setDocs(res.data || []);
     } catch (err) {
-      // Handle error silently
+      console.error("Error fetching docs", err);
     }
   };
 
   const handleSave = async () => {
-    if (!title || !domainId || !content) return alert("الرجاء تعبئة جميع الحقول");
+    if (!title || !content || domainIds.length === 0) {
+      return alert("الرجاء تعبئة جميع الحقول");
+    }
     try {
       if (editingDoc) {
-        await axios.put(`/api/docs/${editingDoc.id}`, { title, content, domainId });
+        await axios.put(`/api/docs/${editingDoc.id}`, {
+          title,
+          content,
+          domainIds,
+          visibleToRoles,
+        });
       } else {
-        await axios.post("/api/docs/add", { title, content, domainId });
+        await axios.post("/api/docs/add", {
+          title,
+          content,
+          domainIds,
+          visibleToRoles,
+        });
       }
-      fetchDocs(domainId);
+      if (domainIds.length > 0) fetchDocs(domainIds[0]);
       handleClose();
     } catch (err) {
+      console.error("Save error:", err);
       alert("حدث خطأ أثناء حفظ المستند");
     }
-  };
-
-  const handleDomainChange = (e) => {
-    const selectedId = e.target.value;
-    setDomainId(selectedId);
-    setDocs([]);
-    fetchDocs(selectedId);
   };
 
   const handleAddClick = () => setShowForm(true);
@@ -71,48 +106,50 @@ export default function DocsPage() {
     setEditingDoc(null);
     setTitle("");
     setContent("");
-    setDomainId(user.currentDomain?.domainId || "");
+    setDomainIds([]);
+    setVisibleToRoles([]);
   };
 
   const handleEdit = (doc) => {
     setEditingDoc(doc);
     setTitle(doc.title);
     setContent(doc.content);
-    setDomainId(doc.domainId);
+    setDomainIds(doc.domainIds || []);
+    setVisibleToRoles(doc.visibleToRoles || []);
     setShowForm(true);
   };
 
   const handleRepublish = async (doc) => {
     try {
-      await axios.put(`/api/docs/${doc.id}`, { action: "republish" });
-      fetchDocs(domainId);
+      await axios.put(`/api/docs/${doc.id}`, { action: "restore" });
+      if (domainIds.length > 0) fetchDocs(domainIds[0]);
     } catch (err) {
       alert("حدث خطأ أثناء إعادة نشر المستند");
     }
   };
 
-  const openConfirmModal = (doc, action) => {
+  const openConfirmModal = (doc, action) =>
     setConfirmModal({ show: true, doc, action });
-  };
 
-  const closeConfirmModal = () => setConfirmModal({ show: false, doc: null, action: null });
+  const closeConfirmModal = () =>
+    setConfirmModal({ show: false, doc: null, action: null });
 
   const confirmAction = async () => {
     if (!confirmModal.doc || !confirmModal.action) return;
     try {
-      if (confirmModal.action === "soft-delete") {
-        await axios.put(`/api/docs/${confirmModal.doc.id}`, { action: "soft-delete" });
-      } else if (confirmModal.action === "permanent-delete") {
-        await axios.put(`/api/docs/${confirmModal.doc.id}`, { action: "permanent-delete" });
-      }
-      fetchDocs(domainId);
+      await axios.put(`/api/docs/${confirmModal.doc.id}`, {
+        action: confirmModal.action,
+      });
+      if (domainIds.length > 0) fetchDocs(domainIds[0]);
       closeConfirmModal();
     } catch (err) {
       alert("حدث خطأ أثناء تنفيذ العملية");
     }
   };
 
-  const filteredDocs = docs.filter((d) => (tab === "published" ? !d.deleted : d.deleted));
+  const filteredDocs = docs.filter((d) =>
+    tab === "published" ? !d.deleted : d.deleted
+  );
 
   return (
     <div className="p-6">
@@ -126,12 +163,22 @@ export default function DocsPage() {
 
       <h1 className="text-3xl font-bold mb-4 text-center">المستندات</h1>
 
+      {/* Domain select */}
       <div className="flex justify-center mb-4 space-x-4">
-        <select value={domainId} onChange={handleDomainChange} className="form-control w-1/2">
+        <select
+          value={domainIds[0] || ""}
+          onChange={(e) => {
+            const selectedId = e.target.value;
+            setDomainIds(selectedId ? [selectedId] : []);
+            setDocs([]);
+            if (selectedId) fetchDocs(selectedId);
+          }}
+          className="form-control w-1/2"
+        >
           <option value="">اختر مجال</option>
           {domains.map((d) => (
-            <option key={d.domainId} value={d.domainId}>
-              {d.domain?.name || d.domainName || d.domainId}
+            <option key={d.id} value={d.id}>
+              {d.name}
             </option>
           ))}
         </select>
@@ -140,13 +187,17 @@ export default function DocsPage() {
       {isAdmin && (
         <div className="flex justify-center mb-4 space-x-4">
           <button
-            className={`btn ${tab === "published" ? "bg-button-color text-white" : "bg-gray-300"}`}
+            className={`btn ${
+              tab === "published" ? "bg-button-color text-white" : "bg-gray-300"
+            }`}
             onClick={() => setTab("published")}
           >
             المنشورة
           </button>
           <button
-            className={`btn ${tab === "deleted" ? "bg-button-color text-white" : "bg-gray-300"}`}
+            className={`btn ${
+              tab === "deleted" ? "bg-button-color text-white" : "bg-gray-300"
+            }`}
             onClick={() => setTab("deleted")}
           >
             المحذوفة
@@ -154,17 +205,26 @@ export default function DocsPage() {
         </div>
       )}
 
+      {/* Docs list */}
       <div className="space-y-4">
         {filteredDocs.length === 0 && (
-          <p className="text-center text-gray-500">لا توجد مستندات لهذا النطاق</p>
+          <p className="text-center text-gray-500">
+            لا توجد مستندات لهذا النطاق
+          </p>
         )}
 
         {filteredDocs.map((doc) => {
           const textContent = doc.content.replace(/<[^>]+>/g, "");
-          const preview = textContent.length > 100 ? textContent.slice(0, 100) + "..." : textContent;
+          const preview =
+            textContent.length > 100
+              ? textContent.slice(0, 100) + "..."
+              : textContent;
 
           return (
-            <div key={doc.id} className="border p-4 rounded shadow flex justify-between items-start">
+            <div
+              key={doc.id}
+              className="border p-4 rounded shadow flex justify-between items-start"
+            >
               <div>
                 <h1
                   className="font-bold text-lg mb-2 cursor-pointer text-blue-600 hover:underline"
@@ -179,10 +239,16 @@ export default function DocsPage() {
                 <div className="flex flex-col space-y-2 ml-4">
                   {tab === "published" && (
                     <>
-                      <button onClick={() => handleEdit(doc)} className="btn bg-yellow-300 hover:opacity-80 flex items-center">
+                      <button
+                        onClick={() => handleEdit(doc)}
+                        className="btn bg-yellow-300 hover:opacity-80 flex items-center"
+                      >
                         <Edit className="ml-1" /> تعديل
                       </button>
-                      <button onClick={() => openConfirmModal(doc, "soft-delete")} className="btn bg-red-400 hover:opacity-80 flex items-center">
+                      <button
+                        onClick={() => openConfirmModal(doc, "soft-delete")}
+                        className="btn bg-red-400 hover:opacity-80 flex items-center"
+                      >
                         <Delete className="ml-1" /> حذف
                       </button>
                     </>
@@ -190,14 +256,25 @@ export default function DocsPage() {
 
                   {tab === "deleted" && (
                     <>
-                      <button onClick={() => handleEdit(doc)} className="btn bg-yellow-300 hover:opacity-80 flex items-center">
+                      <button
+                        onClick={() => handleEdit(doc)}
+                        className="btn bg-yellow-300 hover:opacity-80 flex items-center"
+                      >
                         <Edit className="ml-1" /> تعديل
                       </button>
-                      <button onClick={() => handleRepublish(doc)} className="btn bg-green-400 hover:opacity-80 flex items-center">
+                      <button
+                        onClick={() => handleRepublish(doc)}
+                        className="btn bg-green-400 hover:opacity-80 flex items-center"
+                      >
                         إعادة النشر
                       </button>
                       {["superadmin", "doc_admin"].includes(userRole) && (
-                        <button onClick={() => openConfirmModal(doc, "permanent-delete")} className="btn bg-red-600 hover:opacity-80 flex items-center">
+                        <button
+                          onClick={() =>
+                            openConfirmModal(doc, "permanent-delete")
+                          }
+                          className="btn bg-red-600 hover:opacity-80 flex items-center"
+                        >
                           حذف نهائي
                         </button>
                       )}
@@ -210,10 +287,13 @@ export default function DocsPage() {
         })}
       </div>
 
+      {/* Editor modal */}
       {showForm && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex justify-center items-start pt-24">
           <div className="bg-white p-6 rounded w-11/12 max-w-3xl space-y-4 relative">
-            <h2 className="text-xl font-bold mb-2">{editingDoc ? "تعديل المستند" : "إضافة مستند جديد"}</h2>
+            <h2 className="text-xl font-bold mb-2">
+              {editingDoc ? "تعديل المستند" : "إضافة مستند جديد"}
+            </h2>
             <Editor
               value={content}
               onChange={setContent}
@@ -222,18 +302,33 @@ export default function DocsPage() {
               currentUserDomains={user.userDomains}
               title={title}
               setTitle={setTitle}
-              domainId={domainId}
-              setDomainId={setDomainId}
+              domainIds={domainIds}
+              setDomainIds={setDomainIds}
+              visibleToRoles={visibleToRoles}
+              setVisibleToRoles={setVisibleToRoles}
+              availableRoles={availableRoles}
             />
             <div className="flex justify-end space-x-2 mt-4">
-              <button onClick={handleClose} className="btn bg-gray-300 text-black hover:opacity-80">إلغاء</button>
-              <button onClick={handleSave} className="btn bg-button-color hover:opacity-80 text-white">حفظ</button>
+              <button
+                onClick={handleClose}
+                className="btn bg-gray-300 text-black hover:opacity-80"
+              >
+                إلغاء
+              </button>
+              <button
+                onClick={handleSave}
+                className="btn bg-button-color hover:opacity-80 text-white"
+              >
+                حفظ
+              </button>
             </div>
           </div>
         </div>
       )}
 
-      {showSingleDoc && <SingleDoc doc={showSingleDoc} onClose={() => setShowSingleDoc(null)} />}
+      {showSingleDoc && (
+        <SingleDoc doc={showSingleDoc} onClose={() => setShowSingleDoc(null)} />
+      )}
 
       {/* Confirm modal */}
       {confirmModal.show && (
@@ -242,8 +337,18 @@ export default function DocsPage() {
             <h2 className="text-lg font-bold">تأكيد العملية</h2>
             <p>هل أنت متأكد من تنفيذ هذا الإجراء؟</p>
             <div className="flex justify-end space-x-2 mt-4">
-              <button onClick={closeConfirmModal} className="btn bg-gray-300 text-black hover:opacity-80">إلغاء</button>
-              <button onClick={confirmAction} className="btn bg-red-500 hover:opacity-80 text-white">تأكيد</button>
+              <button
+                onClick={closeConfirmModal}
+                className="btn bg-gray-300 text-black hover:opacity-80"
+              >
+                إلغاء
+              </button>
+              <button
+                onClick={confirmAction}
+                className="btn bg-red-500 hover:opacity-80 text-white"
+              >
+                تأكيد
+              </button>
             </div>
           </div>
         </div>
