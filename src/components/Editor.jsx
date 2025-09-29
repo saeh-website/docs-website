@@ -58,6 +58,7 @@ export default function Editor({
               <input
                 type="checkbox"
                 id={`domain-${d.id}`}
+                value={d.id}
                 checked={domainIds.includes(String(d.id))}
                 onChange={() => handleDomainToggle(d.id)}
               />
@@ -78,6 +79,7 @@ export default function Editor({
               <input
                 type="checkbox"
                 id={`role-${role.id}`}
+                value={role.id}
                 checked={visibleToRoles.includes(String(role.id))}
                 onChange={() => handleRoleToggle(role.id)}
               />
