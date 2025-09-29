@@ -37,7 +37,7 @@ export default function DocsPage() {
     if (user?.userDomains) {
       const mapped = user.userDomains.map((ud) => ({
         id: String(ud.domainId),
-        name: ud.domain?.name || ud.domainName || ud.domainId,
+        name: ud.domain?.name || ud.domainName || `Domain ${ud.domainId}`,
       }));
       setDomains(mapped);
 
@@ -56,7 +56,7 @@ export default function DocsPage() {
         const res = await axios.get("/api/user-roles");
         const normalized = (res.data || []).map((r) => ({
           id: String(r.id),
-          name: r.name,
+          name: r.name || `Role ${r.id}`,
         }));
         setAvailableRoles(normalized);
       } catch (err) {
@@ -67,10 +67,10 @@ export default function DocsPage() {
   }, []);
 
   // Fetch docs
-  const fetchDocs = async (domainId) => {
-    if (!domainId) return;
+  const fetchDocs = async (selectedDomainId) => {
+    if (!selectedDomainId) return;
     try {
-      const res = await axios.get(`/api/docs?domainId=${domainId}`);
+      const res = await axios.get(`/api/docs?domainId=${selectedDomainId}`);
       setDocs(res.data || []);
     } catch (err) {
       console.error("Error fetching docs", err);
@@ -163,9 +163,11 @@ export default function DocsPage() {
 
       <h1 className="text-3xl font-bold mb-4 text-center">المستندات</h1>
 
-      {/* Debug */}
+      {/* Debug panel */}
       <div className="bg-gray-100 border p-2 my-4 text-xs overflow-x-auto">
-        <pre>{JSON.stringify({ domains, availableRoles, domainIds, visibleToRoles }, null, 2)}</pre>
+        <pre>
+          {JSON.stringify({ domains, availableRoles, domainIds, visibleToRoles }, null, 2)}
+        </pre>
       </div>
 
       {/* Domain select */}

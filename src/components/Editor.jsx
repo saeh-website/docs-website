@@ -30,18 +30,20 @@ export default function Editor({
   };
 
   const handleDomainToggle = (id) => {
-    if (domainIds.includes(id)) {
-      setDomainIds(domainIds.filter((d) => d !== id));
+    const stringId = String(id);
+    if (domainIds.includes(stringId)) {
+      setDomainIds(domainIds.filter((d) => d !== stringId));
     } else {
-      setDomainIds([...domainIds, id]);
+      setDomainIds([...domainIds, stringId]);
     }
   };
 
   const handleRoleToggle = (id) => {
-    if (visibleToRoles.includes(id)) {
-      setVisibleToRoles(visibleToRoles.filter((r) => r !== id));
+    const stringId = String(id);
+    if (visibleToRoles.includes(stringId)) {
+      setVisibleToRoles(visibleToRoles.filter((r) => r !== stringId));
     } else {
-      setVisibleToRoles([...visibleToRoles, id]);
+      setVisibleToRoles([...visibleToRoles, stringId]);
     }
   };
 
@@ -56,7 +58,7 @@ export default function Editor({
               <input
                 type="checkbox"
                 id={`domain-${d.id}`}
-                checked={domainIds.includes(d.id)}
+                checked={domainIds.includes(String(d.id))}
                 onChange={() => handleDomainToggle(d.id)}
               />
               <label htmlFor={`domain-${d.id}`}>{d.name}</label>
@@ -76,7 +78,7 @@ export default function Editor({
               <input
                 type="checkbox"
                 id={`role-${role.id}`}
-                checked={visibleToRoles.includes(role.id)}
+                checked={visibleToRoles.includes(String(role.id))}
                 onChange={() => handleRoleToggle(role.id)}
               />
               <label htmlFor={`role-${role.id}`}>{role.name}</label>
