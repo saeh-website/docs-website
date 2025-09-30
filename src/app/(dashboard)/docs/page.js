@@ -15,7 +15,11 @@ export default function DocsPage() {
   const [showSingleDoc, setShowSingleDoc] = useState(null);
   const [editingDoc, setEditingDoc] = useState(null);
   const [tab, setTab] = useState("published");
-  const [confirmModal, setConfirmModal] = useState({ show: false, doc: null, action: null });
+  const [confirmModal, setConfirmModal] = useState({
+    show: false,
+    doc: null,
+    action: null,
+  });
 
   // Form state (for editor)
   const [title, setTitle] = useState("");
@@ -133,8 +137,19 @@ export default function DocsPage() {
     setEditingDoc(doc);
     setTitle(doc.title || "");
     setContent(doc.content || "");
-    setSelectedDomainIds((doc.domainIds || []).map(String));
-    setVisibleToRoles((doc.visibleToRoles || []).map(String));
+
+    // Normalize domainIds (handle both object or primitive cases)
+    const normalizedDomainIds = (doc.domainIds || []).map((d) =>
+      typeof d === "object" && d !== null ? String(d.id) : String(d)
+    );
+    setSelectedDomainIds(normalizedDomainIds);
+
+    // Normalize visibleToRoles
+    const normalizedRoles = (doc.visibleToRoles || []).map((r) =>
+      typeof r === "object" && r !== null ? String(r.id) : String(r)
+    );
+    setVisibleToRoles(normalizedRoles);
+
     setShowForm(true);
   };
 
@@ -148,13 +163,17 @@ export default function DocsPage() {
     }
   };
 
-  const openConfirmModal = (doc, action) => setConfirmModal({ show: true, doc, action });
-  const closeConfirmModal = () => setConfirmModal({ show: false, doc: null, action: null });
+  const openConfirmModal = (doc, action) =>
+    setConfirmModal({ show: true, doc, action });
+  const closeConfirmModal = () =>
+    setConfirmModal({ show: false, doc: null, action: null });
 
   const confirmAction = async () => {
     if (!confirmModal.doc || !confirmModal.action) return;
     try {
-      await axios.put(`/api/docs/${confirmModal.doc.id}`, { action: confirmModal.action });
+      await axios.put(`/api/docs/${confirmModal.doc.id}`, {
+        action: confirmModal.action,
+      });
       if (filterDomainId) fetchDocs(filterDomainId);
       closeConfirmModal();
     } catch (err) {
@@ -163,7 +182,9 @@ export default function DocsPage() {
     }
   };
 
-  const filteredDocs = docs.filter((d) => (tab === "published" ? !d.deleted : d.deleted));
+  const filteredDocs = docs.filter((d) =>
+    tab === "published" ? !d.deleted : d.deleted
+  );
 
   return (
     <div className="p-6">
@@ -180,7 +201,18 @@ export default function DocsPage() {
       {/* Small debug panel to inspect data (remove or hide in production) */}
       <div className="bg-gray-100 border p-2 my-4 text-xs overflow-x-auto">
         <strong>Debug state</strong>
-        <pre>{JSON.stringify({ filterDomainId, selectedDomainIds, visibleToRoles, availableRoles }, null, 2)}</pre>
+        <pre>
+          {JSON.stringify(
+            {
+              filterDomainId,
+              selectedDomainIds,
+              visibleToRoles,
+              availableRoles,
+            },
+            null,
+            2
+          )}
+        </pre>
       </div>
 
       {/* Domain select (filter) */}
@@ -208,13 +240,17 @@ export default function DocsPage() {
       {isAdmin && (
         <div className="flex justify-center mb-4 space-x-4">
           <button
-            className={`btn ${tab === "published" ? "bg-button-color text-white" : "bg-gray-300"}`}
+            className={`btn ${
+              tab === "published" ? "bg-button-color text-white" : "bg-gray-300"
+            }`}
             onClick={() => setTab("published")}
           >
             المنشورة
           </button>
           <button
-            className={`btn ${tab === "deleted" ? "bg-button-color text-white" : "bg-gray-300"}`}
+            className={`btn ${
+              tab === "deleted" ? "bg-button-color text-white" : "bg-gray-300"
+            }`}
             onClick={() => setTab("deleted")}
           >
             المحذوفة
@@ -224,13 +260,21 @@ export default function DocsPage() {
 
       {/* Docs list */}
       <div className="space-y-4">
-        {filteredDocs.length === 0 && <p className="text-center text-gray-500">لا توجد مستندات</p>}
+        {filteredDocs.length === 0 && (
+          <p className="text-center text-gray-500">لا توجد مستندات</p>
+        )}
         {filteredDocs.map((doc) => {
           const textContent = (doc.content || "").replace(/<[^>]+>/g, "");
-          const preview = textContent.length > 100 ? textContent.slice(0, 100) + "..." : textContent;
+          const preview =
+            textContent.length > 100
+              ? textContent.slice(0, 100) + "..."
+              : textContent;
 
           return (
-            <div key={doc.id} className="border p-4 rounded shadow flex justify-between items-start">
+            <div
+              key={doc.id}
+              className="border p-4 rounded shadow flex justify-between items-start"
+            >
               <div>
                 <h1
                   className="font-bold text-lg mb-2 cursor-pointer text-blue-600 hover:underline"
@@ -245,7 +289,10 @@ export default function DocsPage() {
                 <div className="flex flex-col space-y-2 ml-4">
                   {tab === "published" && (
                     <>
-                      <button onClick={() => handleEdit(doc)} className="btn bg-yellow-300 hover:opacity-80 flex items-center">
+                      <button
+                        onClick={() => handleEdit(doc)}
+                        className="btn bg-yellow-300 hover:opacity-80 flex items-center"
+                      >
                         <Edit className="ml-1" /> تعديل
                       </button>
                       <button
@@ -258,10 +305,16 @@ export default function DocsPage() {
                   )}
                   {tab === "deleted" && (
                     <>
-                      <button onClick={() => handleEdit(doc)} className="btn bg-yellow-300 hover:opacity-80 flex items-center">
+                      <button
+                        onClick={() => handleEdit(doc)}
+                        className="btn bg-yellow-300 hover:opacity-80 flex items-center"
+                      >
                         <Edit className="ml-1" /> تعديل
                       </button>
-                      <button onClick={() => handleRepublish(doc)} className="btn bg-green-400 hover:opacity-80 flex items-center">
+                      <button
+                        onClick={() => handleRepublish(doc)}
+                        className="btn bg-green-400 hover:opacity-80 flex items-center"
+                      >
                         إعادة النشر
                       </button>
                     </>
@@ -277,7 +330,9 @@ export default function DocsPage() {
       {showForm && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex justify-center items-start pt-24">
           <div className="bg-white p-6 rounded w-11/12 max-w-3xl space-y-4 relative">
-            <h2 className="text-xl font-bold mb-2">{editingDoc ? "تعديل المستند" : "إضافة مستند جديد"}</h2>
+            <h2 className="text-xl font-bold mb-2">
+              {editingDoc ? "تعديل المستند" : "إضافة مستند جديد"}
+            </h2>
             <Editor
               value={content}
               onChange={setContent}
@@ -291,10 +346,16 @@ export default function DocsPage() {
               availableRoles={availableRoles}
             />
             <div className="flex justify-end space-x-2 mt-4">
-              <button onClick={handleClose} className="btn bg-gray-300 text-black hover:opacity-80">
+              <button
+                onClick={handleClose}
+                className="btn bg-gray-300 text-black hover:opacity-80"
+              >
                 إلغاء
               </button>
-              <button onClick={handleSave} className="btn bg-button-color hover:opacity-80 text-white">
+              <button
+                onClick={handleSave}
+                className="btn bg-button-color hover:opacity-80 text-white"
+              >
                 حفظ
               </button>
             </div>
@@ -303,7 +364,9 @@ export default function DocsPage() {
       )}
 
       {/* SingleDoc modal */}
-      {showSingleDoc && <SingleDoc doc={showSingleDoc} onClose={() => setShowSingleDoc(null)} />}
+      {showSingleDoc && (
+        <SingleDoc doc={showSingleDoc} onClose={() => setShowSingleDoc(null)} />
+      )}
 
       {/* Confirm modal */}
       {confirmModal.show && (
@@ -311,10 +374,16 @@ export default function DocsPage() {
           <div className="bg-white p-6 rounded w-96 space-y-4">
             <h2 className="text-lg font-bold">تأكيد العملية</h2>
             <div className="flex justify-end space-x-2 mt-4">
-              <button onClick={closeConfirmModal} className="btn bg-gray-300 text-black hover:opacity-80">
+              <button
+                onClick={closeConfirmModal}
+                className="btn bg-gray-300 text-black hover:opacity-80"
+              >
                 إلغاء
               </button>
-              <button onClick={confirmAction} className="btn bg-red-500 hover:opacity-80 text-white">
+              <button
+                onClick={confirmAction}
+                className="btn bg-red-500 hover:opacity-80 text-white"
+              >
                 تأكيد
               </button>
             </div>
