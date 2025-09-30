@@ -17,25 +17,25 @@ export default function DocsPage() {
   const [tab, setTab] = useState("published");
   const [confirmModal, setConfirmModal] = useState({ show: false, doc: null, action: null });
 
-  // Form state
+  // Form state (for editor)
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
-  const [selectedDomainIds, setSelectedDomainIds] = useState([]);
+  const [selectedDomainIds, setSelectedDomainIds] = useState([]); // multi for editor
   const [visibleToRoles, setVisibleToRoles] = useState([]);
 
   // Filter state
-  const [filterDomainId, setFilterDomainId] = useState("");
+  const [filterDomainId, setFilterDomainId] = useState(""); // dropdown filter
 
   // Data
   const [domains, setDomains] = useState([]);
-  const [availableRoles, setAvailableRoles] = useState([]);
+  const [availableRoles, setAvailableRoles] = useState([]); // {id, name}
   const [docs, setDocs] = useState([]);
 
   const user = session?.user;
-  const userRole = user?.currentDomain?.roleName?.toLowerCase();
+  const userRole = user?.currentDomain?.roleName?.toLowerCase?.();
   const isAdmin = ["superadmin", "doc_admin", "site_admin"].includes(userRole);
 
-  // Load domains from user
+  // Load domains from user (map to {id,name})
   useEffect(() => {
     if (user?.userDomains) {
       const mapped = user.userDomains.map((ud) => ({
@@ -52,7 +52,7 @@ export default function DocsPage() {
     }
   }, [user]);
 
-  // Load available roles
+  // Load available roles from backend (/api/user-roles)
   useEffect(() => {
     async function fetchRoles() {
       try {
@@ -69,7 +69,7 @@ export default function DocsPage() {
     fetchRoles();
   }, []);
 
-  // Fetch docs
+  // Fetch docs for a domain
   const fetchDocs = async (domainId) => {
     if (!domainId) return;
     try {
@@ -111,6 +111,8 @@ export default function DocsPage() {
 
   const handleAddClick = () => {
     resetForm();
+    // when creating a new doc, pre-select the current filter domain for convenience
+    if (filterDomainId) setSelectedDomainIds([filterDomainId]);
     setShowForm(true);
   };
 
@@ -129,8 +131,8 @@ export default function DocsPage() {
 
   const handleEdit = (doc) => {
     setEditingDoc(doc);
-    setTitle(doc.title);
-    setContent(doc.content);
+    setTitle(doc.title || "");
+    setContent(doc.content || "");
     setSelectedDomainIds((doc.domainIds || []).map(String));
     setVisibleToRoles((doc.visibleToRoles || []).map(String));
     setShowForm(true);
@@ -140,7 +142,8 @@ export default function DocsPage() {
     try {
       await axios.put(`/api/docs/${doc.id}`, { action: "restore" });
       if (filterDomainId) fetchDocs(filterDomainId);
-    } catch {
+    } catch (err) {
+      console.error("Republish error:", err);
       alert("حدث خطأ أثناء إعادة نشر المستند");
     }
   };
@@ -154,7 +157,8 @@ export default function DocsPage() {
       await axios.put(`/api/docs/${confirmModal.doc.id}`, { action: confirmModal.action });
       if (filterDomainId) fetchDocs(filterDomainId);
       closeConfirmModal();
-    } catch {
+    } catch (err) {
+      console.error("Confirm action error:", err);
       alert("حدث خطأ أثناء تنفيذ العملية");
     }
   };
@@ -173,18 +177,13 @@ export default function DocsPage() {
 
       <h1 className="text-3xl font-bold mb-4 text-center">المستندات</h1>
 
-      {/* Debug panel */}
+      {/* Small debug panel to inspect data (remove or hide in production) */}
       <div className="bg-gray-100 border p-2 my-4 text-xs overflow-x-auto">
-        <pre>
-          {JSON.stringify(
-            { filterDomainId, selectedDomainIds, visibleToRoles, availableRoles },
-            null,
-            2
-          )}
-        </pre>
+        <strong>Debug state</strong>
+        <pre>{JSON.stringify({ filterDomainId, selectedDomainIds, visibleToRoles, availableRoles }, null, 2)}</pre>
       </div>
 
-      {/* Domain select */}
+      {/* Domain select (filter) */}
       <div className="flex justify-center mb-4 space-x-4">
         <select
           value={filterDomainId}
@@ -227,7 +226,7 @@ export default function DocsPage() {
       <div className="space-y-4">
         {filteredDocs.length === 0 && <p className="text-center text-gray-500">لا توجد مستندات</p>}
         {filteredDocs.map((doc) => {
-          const textContent = doc.content.replace(/<[^>]+>/g, "");
+          const textContent = (doc.content || "").replace(/<[^>]+>/g, "");
           const preview = textContent.length > 100 ? textContent.slice(0, 100) + "..." : textContent;
 
           return (
@@ -303,8 +302,10 @@ export default function DocsPage() {
         </div>
       )}
 
+      {/* SingleDoc modal */}
       {showSingleDoc && <SingleDoc doc={showSingleDoc} onClose={() => setShowSingleDoc(null)} />}
 
+      {/* Confirm modal */}
       {confirmModal.show && (
         <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex justify-center items-center">
           <div className="bg-white p-6 rounded w-96 space-y-4">

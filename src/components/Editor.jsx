@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { useState, useEffect } from "react";
 
 const ReactQuill = dynamic(() => import("react-quill"), { ssr: false });
 import "react-quill/dist/quill.snow.css";
@@ -15,22 +16,57 @@ export default function Editor({
   setDomainIds,
   visibleToRoles = [],
   setVisibleToRoles,
-  availableRoles = [],
+  availableRoles = [], // array of { id, name }
 }) {
-  // Toggle domain
-  const handleDomainToggle = (id) => {
-    const stringId = String(id);
-    setDomainIds((prev) =>
-      prev.includes(stringId) ? prev.filter((d) => d !== stringId) : [...prev, stringId]
-    );
+  // local content state (controlled by parent via onChange)
+  const [content, setContent] = useState(value || "");
+
+  useEffect(() => {
+    setContent(value || "");
+  }, [value]);
+
+  // ensure parent setters exist (defensive)
+  const safeSetDomainIds = (fnOrArray) => {
+    if (typeof setDomainIds === "function") {
+      setDomainIds(fnOrArray);
+    } else {
+      console.warn("Editor: setDomainIds not provided or not a function");
+    }
   };
 
-  // Toggle role
+  const safeSetVisibleToRoles = (fnOrArray) => {
+    if (typeof setVisibleToRoles === "function") {
+      setVisibleToRoles(fnOrArray);
+    } else {
+      console.warn("Editor: setVisibleToRoles not provided or not a function");
+    }
+  };
+
+  const handleContentChange = (newContent) => {
+    setContent(newContent);
+    onChange?.(newContent);
+  };
+
+  // toggle domain id (store strings)
+  const handleDomainToggle = (id) => {
+    const sid = String(id);
+    safeSetDomainIds((prev = []) => {
+      const prevStrings = prev.map(String);
+      const next = prevStrings.includes(sid) ? prevStrings.filter((x) => x !== sid) : [...prevStrings, sid];
+      console.debug("Editor: domain toggle", { id: sid, next });
+      return next;
+    });
+  };
+
+  // toggle role id (store strings)
   const handleRoleToggle = (id) => {
-    const stringId = String(id);
-    setVisibleToRoles((prev) =>
-      prev.includes(stringId) ? prev.filter((r) => r !== stringId) : [...prev, stringId]
-    );
+    const sid = String(id);
+    safeSetVisibleToRoles((prev = []) => {
+      const prevStrings = prev.map(String);
+      const next = prevStrings.includes(sid) ? prevStrings.filter((x) => x !== sid) : [...prevStrings, sid];
+      console.debug("Editor: role toggle", { id: sid, next });
+      return next;
+    });
   };
 
   return (
@@ -39,17 +75,22 @@ export default function Editor({
       <div className="form-group">
         <label>المجالات:</label>
         {domains.length > 0 ? (
-          domains.map((d) => (
-            <div key={d.id} className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id={`domain-${d.id}`}
-                checked={domainIds.includes(String(d.id))}
-                onChange={() => handleDomainToggle(d.id)}
-              />
-              <label htmlFor={`domain-${d.id}`}>{d.name}</label>
-            </div>
-          ))
+          domains.map((d) => {
+            const sid = String(d.id);
+            const checked = Array.isArray(domainIds) && domainIds.map(String).includes(sid);
+            return (
+              <div key={sid} className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id={`domain-${sid}`}
+                  value={sid}
+                  checked={checked}
+                  onChange={() => handleDomainToggle(sid)}
+                />
+                <label htmlFor={`domain-${sid}`}>{d.name}</label>
+              </div>
+            );
+          })
         ) : (
           <small className="text-red-600">لا توجد مجالات متاحة</small>
         )}
@@ -59,17 +100,22 @@ export default function Editor({
       <div className="form-group mt-3">
         <label>الأدوار:</label>
         {availableRoles.length > 0 ? (
-          availableRoles.map((role) => (
-            <div key={role.id} className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id={`role-${role.id}`}
-                checked={visibleToRoles.includes(String(role.id))}
-                onChange={() => handleRoleToggle(role.id)}
-              />
-              <label htmlFor={`role-${role.id}`}>{role.name}</label>
-            </div>
-          ))
+          availableRoles.map((role) => {
+            const rid = String(role.id);
+            const checked = Array.isArray(visibleToRoles) && visibleToRoles.map(String).includes(rid);
+            return (
+              <div key={rid} className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id={`role-${rid}`}
+                  value={rid}
+                  checked={checked}
+                  onChange={() => handleRoleToggle(rid)}
+                />
+                <label htmlFor={`role-${rid}`}>{role.name}</label>
+              </div>
+            );
+          })
         ) : (
           <small className="text-red-600">لا توجد أدوار متاحة</small>
         )}
@@ -88,12 +134,12 @@ export default function Editor({
         />
       </div>
 
-      {/* Content */}
+      {/* Content (Quill) */}
       <div className="form-group mt-3">
         <label>المحتوى:</label>
         <ReactQuill
-          value={value}
-          onChange={onChange}
+          value={content}
+          onChange={handleContentChange}
           theme="snow"
           style={{ direction: "rtl", textAlign: "right", minHeight: "200px" }}
           modules={{
